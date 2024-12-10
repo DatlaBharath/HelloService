@@ -1,83 +1,90 @@
-pipeline {
-    agent any
-    tools { ["Tool Name"] }
+
+
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                ["Checkout Command"]
+                checkout([$class: 'GitSCM', branches: [[name: "*/main"]], userRemoteConfigs: [[url: "https://github.com/your-repo.git"]]])
+            }
+        } 
+
+        stage('Build Project') {
+            steps {
+                sh 'mvn clean package -DskipTests'
             }
         }
-        stage('Build Image') {
-            steps {
-                sh '[" Build Command"] -DskipTests'
-            }
-        }
+
         stage('Build Docker Image') {
+            environment {
+                DOCKER_CREDENTIALS = credentials('dockerhub_credentials')
+            }
             steps {
                 script {
-                    def imageName = "ratneshpuskar/[github_repo_name].toLowerCase():${env.BUILD_NUMBER}"
-                    sh "docker build -t ${imageName} ."
+                    def imageName = "ratneshpuskar/your-repo-name:${env.BUILD_NUMBER}".toLowerCase()
+                    sh """
+                        docker build -t ${imageName} .
+                        echo ${DOCKER_CREDENTIALS_PSW} | docker login -u ${DOCKER_CREDENTIALS_USR} --password-stdin
+                        docker push ${imageName}
+                    """
                 }
             }
         }
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUsername')]) {
-                    sh 'echo "${dockerHubPassword}" | docker login -u "${dockerHubUsername}" --password-stdin'
-                    sh 'docker push "ratneshpuskar/[github_repo_name].toLowerCase():${env.BUILD_NUMBER}"'
-                }
-            }
-        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
                     def deploymentYaml = """
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: project-deployment
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: project
-  template:
-    metadata:
-      labels:
-        app: project
-    spec:
-      containers:
-      - name: project
-        image: ratneshpuskar/[github_repo_name].toLowerCase():${env.BUILD_NUMBER}
-        ports:
-        - containerPort:  "Docker_Container_Port"
-"""
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    metadata:
+                      name: your-deployment
+                    spec:
+                      replicas: 3
+                      selector:
+                        matchLabels:
+                          app: your-app
+                      template:
+                        metadata:
+                          labels:
+                            app: your-app
+                        spec:
+                          containers:
+                          - name: your-container
+                            image: ratneshpuskar/your-repo-name:${env.BUILD_NUMBER}
+                            ports:
+                            - containerPort: 8080
+                    """
                     def serviceYaml = """
-apiVersion: v1
-kind: Service
-metadata:
-  name: project-service
-spec:
-  type: NodePort
-  ports:
-  - port: "Walking_Cat_Port"
-    targetPort: "Docker_Container_Port"
-    nodePort: 30007
-  selector:
-    app: project 
-"""
-                    sh 'echo "${deploymentYaml}" | ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@1.3.4.5 "kubectl apply -f -" < -'
-                    sh 'echo "${serviceYaml}" | ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@1.3.4.5 "kubectl apply -f -" < -'
+                    apiVersion: v1
+                    kind: Service
+                    metadata:
+                      name: your-service
+                    spec:
+                      type: NodePort
+                      selector:
+                        app: your-app
+                      ports:
+                        - protocol: TCP
+                          port: 80
+                          targetPort: 8080
+                          nodePort: 30007
+                    """
+                    sh """
+                        echo "${deploymentYaml}" > deployment.yaml
+                        echo "${serviceYaml}" > service.yaml
+                        ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@KUBERNETES_IP "kubectl apply -f -" < deployment.yaml
+                        ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@KUBERNETES_IP "kubectl apply -f -" < service.yaml
+                    """
                 }
             }
         }
     }
+
     post {
         success {
-            echo 'Deployment successful.'
+            echo "Build and deployment successful!"
         }
         failure {
-            echo 'Deployment failed.'
+            echo "Build or deployment failed!"
         }
     }
 }
