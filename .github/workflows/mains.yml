@@ -1,0 +1,17 @@
+name: Simple Echo Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  echo-job:
+    runs-on: ec2-runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Echo Hello World
+        run: echo "Hello, World!"
