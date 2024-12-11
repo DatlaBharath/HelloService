@@ -89,5 +89,5 @@ jobs:
           EOF
       - name: Apply deployment and service to Kubernetes
         run: |
-          ssh -o StrictHostKeyChecking=no -i /home/ec2-user/.ssh/test.pem ubuntu@35.154.150.199 "kubectl apply -f -" < deployment.yaml
-          ssh -o StrictHostKeyChecking=no -i /home/ec2-user/.ssh/test.pem ubuntu@35.154.150.199 "kubectl apply -f -" < service.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@35.154.150.199 "kubectl apply -f -" < deployment.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@35.154.150.199 "kubectl apply -f -" < service.yaml
