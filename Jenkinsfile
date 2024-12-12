@@ -1,90 +1,100 @@
+pipeline {
+    agent any
 
+    tools {
+        nodejs "nodejs_tool_name"
+    }
 
     stages {
         stage('Checkout Code') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: "*/main"]], userRemoteConfigs: [[url: "https://github.com/your-repo.git"]]])
-            }
-        } 
-
-        stage('Build Project') {
-            steps {
-                sh 'mvn clean package -DskipTests'
+                git branch: "main", url: "your_repo_url"
             }
         }
 
-        stage('Build Docker Image') {
-            environment {
-                DOCKER_CREDENTIALS = credentials('dockerhub_credentials')
+        stage('Build Project') {
+            steps {
+                sh 'npm install --no-audit --no-fund --no-optional'
+                sh 'npm run build --if-present'
             }
+        }
+
+        stage('Create Docker Image') {
             steps {
                 script {
-                    def imageName = "ratneshpuskar/your-repo-name:${env.BUILD_NUMBER}".toLowerCase()
-                    sh """
-                        docker build -t ${imageName} .
-                        echo ${DOCKER_CREDENTIALS_PSW} | docker login -u ${DOCKER_CREDENTIALS_USR} --password-stdin
-                        docker push ${imageName}
-                    """
+                    def repoName = "github_repo_name_in_lowercase"
+                    def buildNumber = env.BUILD_NUMBER
+                    def imageName = "sakthi/${repoName}:${buildNumber}"
+                    sh "docker build -t ${imageName} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'sajthi', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
+                    sh 'echo "${DOCKER_HUB_PASSWORD}" | docker login -u "${DOCKER_HUB_USERNAME}" --password-stdin'
+                    def imageName = "sakthi/github_repo_name_in_lowercase:${env.BUILD_NUMBER}"
+                    sh "docker push ${imageName}"
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    def deploymentYaml = """
+                writeFile file: 'deployment.yaml', text: """
                     apiVersion: apps/v1
                     kind: Deployment
                     metadata:
-                      name: your-deployment
+                      name: project-deployment
+                      labels:
+                        app: project
                     spec:
-                      replicas: 3
+                      replicas: 1
                       selector:
                         matchLabels:
-                          app: your-app
+                          app: project
                       template:
                         metadata:
                           labels:
-                            app: your-app
+                            app: project
                         spec:
                           containers:
-                          - name: your-container
-                            image: ratneshpuskar/your-repo-name:${env.BUILD_NUMBER}
+                          - name: project-container
+                            image: sakthi/github_repo_name_in_lowercase:${env.BUILD_NUMBER}
                             ports:
                             - containerPort: 8080
-                    """
-                    def serviceYaml = """
+                """
+                
+                writeFile file: 'service.yaml', text: """
                     apiVersion: v1
                     kind: Service
                     metadata:
-                      name: your-service
+                      name: project-service
                     spec:
                       type: NodePort
                       selector:
-                        app: your-app
+                        app: project
                       ports:
-                        - protocol: TCP
-                          port: 80
-                          targetPort: 8080
-                          nodePort: 30007
-                    """
-                    sh """
-                        echo "${deploymentYaml}" > deployment.yaml
-                        echo "${serviceYaml}" > service.yaml
-                        ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@KUBERNETES_IP "kubectl apply -f -" < deployment.yaml
-                        ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@KUBERNETES_IP "kubectl apply -f -" < service.yaml
-                    """
-                }
+                      - protocol: "TCP"
+                        port: 80
+                        targetPort: 8080
+                        nodePort: 30007
+                """
+                
+                sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@your_kubernetes_server "kubectl apply -f -" < deployment.yaml'
+                sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@your_kubernetes_server "kubectl apply -f -" < service.yaml'
             }
         }
     }
 
     post {
         success {
-            echo "Build and deployment successful!"
+            echo "Build and deployment completed successfully!"
         }
+        
         failure {
-            echo "Build or deployment failed!"
+            echo "Build or deployment failed."
         }
     }
 }
