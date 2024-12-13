@@ -83,8 +83,8 @@ pipeline {
                     writeFile file: 'deployment.yaml', text: deploymentYaml
                     writeFile file: 'service.yaml', text: serviceYaml
 
-                    sh "ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@your-ec2-ip 'kubectl apply -f -' < deployment.yaml"
-                    sh "ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@your-ec2-ip 'kubectl apply -f -' < service.yaml"
+                    sh "ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@15.206.66.225 'kubectl apply -f -' < deployment.yaml"
+                    sh "ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@15.206.66.225 'kubectl apply -f -' < service.yaml"
                 }
             }
         }
