@@ -1,0 +1,101 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK'
+        maven 'Maven'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout([$class: 'GitSCM', 
+                          branches: [[name: "*/master"]],
+                          userRemoteConfigs: [[url: 'https://github.com/your-repo.git']]
+                ])
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package -Dmaven.test.skip=true'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    def app = 'sakthisiddu1/' + env.JOB_NAME.toLowerCase() + ':' + "${env.BUILD_NUMBER}"
+                    sh "docker build -t ${app} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'Sakthisid@1', passwordVariable: 'DOCKER_HUB_PASS', usernameVariable: 'DOCKER_HUB_USER')]) {
+                    sh 'echo $DOCKER_HUB_PASS | docker login -u $DOCKER_HUB_USER --password-stdin'
+                    sh 'docker push sakthisiddu1/${JOB_NAME.toLowerCase()}:${BUILD_NUMBER}'
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    def deploymentYaml = """
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    metadata:
+                      name: ${env.JOB_NAME.toLowerCase()}
+                    spec:
+                      replicas: 1
+                      selector:
+                        matchLabels:
+                          app: ${env.JOB_NAME.toLowerCase()}
+                      template:
+                        metadata:
+                          labels:
+                            app: ${env.JOB_NAME.toLowerCase()}
+                        spec:
+                          containers:
+                          - name: ${env.JOB_NAME.toLowerCase()}
+                            image: sakthisiddu1/${env.JOB_NAME.toLowerCase()}:${BUILD_NUMBER}
+                            ports:
+                            - containerPort: 8080
+                    """
+
+                    def serviceYaml = """
+                    apiVersion: v1
+                    kind: Service
+                    metadata:
+                      name: ${env.JOB_NAME.toLowerCase()}
+                    spec:
+                      type: NodePort
+                      selector:
+                        app: ${env.JOB_NAME.toLowerCase()}
+                      ports:
+                      - port: 8080
+                        targetPort: 8080
+                        nodePort: 30007
+                    """
+
+                    writeFile file: 'deployment.yaml', text: deploymentYaml
+                    writeFile file: 'service.yaml', text: serviceYaml
+
+                    sh "ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@your-ec2-ip 'kubectl apply -f -' < deployment.yaml"
+                    sh "ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@your-ec2-ip 'kubectl apply -f -' < service.yaml"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment successful!'
+        }
+        failure {
+            echo 'Deployment failed!'
+        }
+    }
+}
