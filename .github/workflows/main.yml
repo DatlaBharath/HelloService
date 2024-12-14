@@ -1,102 +1,57 @@
-name: Build and Push Docker Image
- 
+name: CI/CD Pipeline
+
 on:
   push:
     branches:
-      - main  # Trigger the workflow on push to the main branch
- 
+      - main
+
 jobs:
-  build:
+  build_project:
     runs-on: self-hosted
- 
+
     steps:
-    - name: Check out code
+    - name: Checkout code
       uses: actions/checkout@v2
+      
     - name: Set up JDK 17
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v2
       with:
-        java-version: '17'
         distribution: 'temurin'
-        cache: maven
-    - name: Install Maven (if not already installed)
-      run: |
-        sudo apt update
-        sudo apt install -y maven
- 
-    - name: Build with Maven
-      run: mvn clean install -DskipTests
- 
-  build_image:
+        java-version: '17'
+
+    - name: Install Maven
+      run: sudo apt-get update && sudo apt-get install -y maven
+
+    - name: Build project
+      run: mvn install -Dmaven.test.skip=true
+
+  build_and_push_image:
     runs-on: self-hosted
-    needs: build  # This job depends on the 'build' job
- 
+
+    needs: build_project
+    
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
     - name: Build Docker image
-      run: |
-        IMAGE_NAME="sakthisiddu1/helloservice:${{ github.run_number }}"
-        docker build -t $IMAGE_NAME .
- 
-  push_image:
-    runs-on: self-hosted
-    needs: build_image  # This job depends on the 'build_image' job
- 
-    steps:
+      run: docker build -t your-dockerhub-username/your-repo-name:latest .
+
     - name: Log in to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-    - name: Push Docker image to Docker Hub
-      run: |
-        IMAGE_NAME="sakthisiddu1/helloservice:${{ github.run_number }}"
-        docker push $IMAGE_NAME
- 
+      run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+    - name: Push Docker image
+      run: docker push your-dockerhub-username/your-repo-name:latest
+
   deploy:
     runs-on: self-hosted
-    needs: push_image
+
+    needs: build_and_push_image
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
- 
-      - name: Create deployment and service YAML files
-        run: |
-          cat << EOF > deployment.yaml
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: helloservice-deployment
-          spec:
-            replicas: 1
-            selector:
-              matchLabels:
-                app: helloservice
-            template:
-              metadata:
-                labels:
-                  app: helloservice
-              spec:
-                containers:
-                - name: helloservice
-                  image: sakthisiddu1/helloservice:${{ github.run_number }}
-                  ports:
-                  - containerPort: 5000
-          EOF
- 
-          cat << EOF > service.yaml
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: helloservice-service
-          spec:
-            type: NodePort
-            selector:
-              app: helloservice
-            ports:
-            - port: 5000
-              nodePort: 30007
-          EOF
- 
-      - name: Apply deployment and service to Kubernetes
-        run: |
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@43.205.241.82 "kubectl apply -f -" < deployment.yaml 
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@43.205.241.82 "kubectl apply -f -" < service.yaml
+    - name: Deploy to Kubernetes
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ubuntu@instance2-public-ip << 'EOF'
+          kubectl set image deployment/your-deployment your-container=your-dockerhub-username/your-repo-name:latest --record
+          kubectl rollout status deployment/your-deployment
+        EOF
