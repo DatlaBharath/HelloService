@@ -44,8 +44,8 @@ jobs:
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
       with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
     - name: Push Docker image to Docker Hub
       run: |
         IMAGE_NAME="sakthisiddu1/helloservice:${{ github.run_number }}"
@@ -98,5 +98,5 @@ jobs:
  
       - name: Apply deployment and service to Kubernetes
         run: |
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.201.119.77 "kubectl apply -f -" < deployment.yaml 
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.201.119.77 "kubectl apply -f -" < service.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@65.2.128.218 "kubectl apply -f -" < deployment.yaml 
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@65.2.128.218 "kubectl apply -f -" < service.yaml
