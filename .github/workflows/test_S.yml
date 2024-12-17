@@ -1,36 +1,41 @@
-name: Build and Deploy
+name: CI/CD Pipeline
 
 on: 
   push:
-    branches: 
+    branches:
       - main
 
 jobs:
   build_project:
-    runs-on: self-hosted
-    
+    runs-on: [self-hosted]
     steps:
-      - name: Check out code
+      - name: Checkout Code
         uses: actions/checkout@v2
-      
+        
       - name: Install Maven
         run: sudo apt install -y maven
-      
+        
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
       - name: Build with Maven
-        run: mvn install -DskipTests
+        run: mvn clean install -DskipTests
 
   build_docker_image:
+    runs-on: [self-hosted]
     needs: build_project
-    runs-on: self-hosted
     steps:
-      - name: Check out code
+      - name: Checkout Code
         uses: actions/checkout@v2
-      
-      - name: Build Docker image
+        
+      - name: Build Docker Image
         run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
-      
-      - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-      
-      - name: Push Docker image
+        
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.PASSWORD }}" | docker login -u "${{ secrets.USERNAME }}" --password-stdin
+        
+      - name: Push Docker Image
         run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
