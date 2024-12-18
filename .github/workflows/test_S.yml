@@ -1,116 +1,107 @@
-name: Build and Deploy
+name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build_project:
-    runs-on: self-hosted
+    runs-on: [self-hosted]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-        
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          
+
       - name: Install Maven (if not already installed)
         run: |
           sudo apt update
           sudo apt install -y maven
-    
+
       - name: Build the project
-        run: |
-          mvn clean install -DskipTests
-          
+        run: mvn clean install -DskipTests
+
   build_image:
-    runs-on: self-hosted
+    runs-on: [self-hosted]
     needs: build_project
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-        
+
       - name: Build Docker image
         run: |
-          DOCKER_IMAGE_NAME=sakthisiddu1/helloservice:${{ github.run_number }}
-          docker build -t $DOCKER_IMAGE_NAME .
-          echo $DOCKER_IMAGE_NAME > image_name.txt
-          
-      - name: Save Docker image name
-        id: save_image_name
-        run: echo "image_name=$(<image_name.txt)" >> $GITHUB_ENV
-          
+          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+
   push_image:
-    runs-on: self-hosted
+    runs-on: [self-hosted]
     needs: build_image
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-        
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          
-      - name: Push Docker image to DockerHub
+
+      - name: Push Docker image
         run: |
-          docker push ${{ env.image_name }}
-          
+          docker push sakthisiddu1/helloservice:${{ github.run_number }}
+
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted]
     needs: push_image
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-        
-      - name: Create Kubernetes deployment
+
+      - name: Create deployment YAML
         run: |
-          cat <<EOF > deployment.yaml
+          echo "
           apiVersion: apps/v1
           kind: Deployment
           metadata:
-            name: hello-service-deployment
+            name: helloservice-deployment
           spec:
-            replicas: 1
+            replicas: 2
             selector:
               matchLabels:
-                app: hello-service
+                app: helloservice
             template:
               metadata:
                 labels:
-                  app: hello-service
+                  app: helloservice
               spec:
                 containers:
-                - name: hello-service
-                  image: ${{ env.image_name }}
+                - name: helloservice
+                  image: sakthisiddu1/helloservice:${{ github.run_number }}
                   ports:
                   - containerPort: 5000
-          EOF
-          
-          cat <<EOF > service.yaml
+          " > deployment.yaml
+
+      - name: Create service YAML
+        run: |
+          echo "
           apiVersion: v1
           kind: Service
           metadata:
-            name: hello-service
+            name: helloservice-service
           spec:
             type: NodePort
             selector:
-              app: hello-service
+              app: helloservice
             ports:
-              - nodePort: 30007
-                port: 5000
+              - port: 5000
                 targetPort: 5000
-          EOF
-          
+                nodePort: 30007
+          " > service.yaml
+
       - name: Deploy to Kubernetes
         run: |
-          scp -i /var/test.pem -o StrictHostKeyChecking=no deployment.yaml ubuntu@13.233.108.0:/tmp/deployment.yaml
-          ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.108.0 "kubectl apply -f /tmp/deployment.yaml"
-          
-          scp -i /var/test.pem -o StrictHostKeyChecking=no service.yaml ubuntu@13.233.108.0:/tmp/service.yaml
-          ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.108.0 "kubectl apply -f /tmp/service.yaml"
+          cat deployment.yaml | ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.108.40.163 "kubectl apply -f -"
+          cat service.yaml | ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.108.40.163 "kubectl apply -f -"
