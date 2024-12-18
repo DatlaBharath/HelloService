@@ -14,7 +14,7 @@ jobs:
       - name: Install JDK and Maven
         run: |
           sudo apt update
-          sudo apt install -y openjdk-11-jdk maven
+          sudo apt install -y openjdk-17-jdk maven
       - name: Build project
         run: mvn clean install
 
