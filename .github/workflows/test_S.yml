@@ -30,8 +30,6 @@ jobs:
     runs-on: self-hosted
     needs: build_project
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
 
       - name: Build Docker image
         run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
