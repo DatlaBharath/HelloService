@@ -1,43 +1,52 @@
 pipeline {
     agent any
+
     tools {
         maven 'Maven'
     }
+
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                git url: 'https://github.com/DatlaBharath/HelloService', branch: 'main'
+                git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
-        stage('Build Maven Project') {
+        
+        stage('Build') {
             steps {
-                sh "mvn clean package -DskipTests"
+                sh 'mvn clean package -DskipTests'
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    def dockerImage = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
-                    sh "docker build -t ${dockerImage} ."
+                    def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+                    sh "docker build -t ${imageName} ."
                 }
             }
         }
+
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_HUB_PASS', usernameVariable: 'DOCKER_HUB_USER')]) {
-                    sh "echo ${DOCKER_HUB_PASS} | docker login -u ${DOCKER_HUB_USER} --password-stdin"
-                    sh "docker push ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    script {
+                        sh 'echo $PASSWORD | docker login -u $USERNAME --password-stdin'
+                        def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+                        sh "docker push ${imageName}"
+                    }
                 }
             }
         }
-        stage('Deploy to Kubernetes') {
+        
+        stage('Create Kubernetes Deployment') {
             steps {
                 script {
                     def deploymentYaml = """
                     apiVersion: apps/v1
                     kind: Deployment
                     metadata:
-                      name: helloservice
+                      name: helloservice-deployment
                     spec:
                       replicas: 1
                       selector:
@@ -58,33 +67,35 @@ pipeline {
                     apiVersion: v1
                     kind: Service
                     metadata:
-                      name: helloservice
+                      name: helloservice-service
                     spec:
                       selector:
                         app: helloservice
                       ports:
-                      - protocol: TCP
-                        port: 80
-                        targetPort: 5000
-                        nodePort: 30007
+                        - protocol: TCP
+                          port: 80
+                          targetPort: 5000
+                          nodePort: 30007
                       type: NodePort
                     """
-                    writeFile(file: 'deployment.yaml', text: deploymentYaml)
-                    writeFile(file: 'service.yaml', text: serviceYaml)
+                    writeFile file: 'deployment.yaml', text: deploymentYaml
+                    writeFile file: 'service.yaml', text: serviceYaml
+
                     sh """
-                    ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.113.41 "kubectl apply -f -" < deployment.yaml
-                    ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.113.41 "kubectl apply -f -" < service.yaml
+                    ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.232.42.127 "kubectl apply -f -" < deployment.yaml
+                    ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.232.42.127 "kubectl apply -f -" < service.yaml
                     """
                 }
             }
         }
     }
+
     post {
         success {
-            echo 'The build and deployment were successful.'
+            echo 'Build, Push, and Deployment Successful'
         }
         failure {
-            echo 'The build or deployment failed.'
+            echo 'Build, Push, or Deployment Failed'
         }
     }
 }
