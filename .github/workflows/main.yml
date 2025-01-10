@@ -1,4 +1,5 @@
-name: CI/CD Pipeline
+
+name: Build and Deploy
 
 on:
   push:
@@ -31,7 +32,7 @@ jobs:
     needs: build_project
     steps:
       - name: Build Docker image
-        run: docker build -t undefined/helloservice:${{ github.run_number }} .
+        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
   push_image:
     runs-on: self-hosted
@@ -44,13 +45,13 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Push Docker image
-        run: docker push undefined/helloservice:${{ github.run_number }}
+        run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: self-hosted
     needs: push_image
     steps:
-      - name: Create deployment YAML
+      - name: Create deployment.yaml
         run: |
           echo "
           apiVersion: apps/v1
@@ -58,7 +59,7 @@ jobs:
           metadata:
             name: helloservice-deployment
           spec:
-            replicas: 2
+            replicas: 1
             selector:
               matchLabels:
                 app: helloservice
@@ -69,12 +70,12 @@ jobs:
               spec:
                 containers:
                 - name: helloservice
-                  image: undefined/helloservice:${{ github.run_number }}
+                  image: sakthisiddu1/helloservice:${{ github.run_number }}
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
 
-      - name: Create service YAML
+      - name: Create service.yaml
         run: |
           echo "
           apiVersion: v1
@@ -86,11 +87,11 @@ jobs:
             selector:
               app: helloservice
             ports:
-              - port: 5000
-                targetPort: 5000
-                nodePort: 30007
+            - port: 5000
+              targetPort: 5000
+              nodePort: 30007
           " > service.yaml
-      
+
       - name: Deploy to Kubernetes
         run: |
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@65.2.128.24 "kubectl apply -f -" < deployment.yaml
