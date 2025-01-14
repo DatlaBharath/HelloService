@@ -4,110 +4,96 @@ pipeline {
     tools {
         maven 'Maven'
     }
-    
+
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService'
+                echo "Checking out code from GitHub repository..."
+                checkout([ $class: 'GitSCM', branches: [[name: "*/main"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: "https://github.com/DatlaBharath/HelloService"]] ])
             }
         }
-        
-        stage('Build Application') {
+
+        stage('Build') {
             steps {
-                sh 'mvn clean install -DskipTests'
+                echo "Building the Maven project..."
+                sh 'mvn clean package -DskipTests'
             }
         }
-        
-        stage('Build Docker Image') {
+
+        stage('Docker Build and Push') {
             steps {
                 script {
-                    def repoName = 'helloservice'
-                    def imageTag = "ratneshpuskar/${repoName.toLowerCase()}:${env.BUILD_NUMBER}"
-                    
-                    sh """
-                       docker build -t ${imageTag} .
-                    """
-                }
-            }
-        }
-        
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    script {
-                        def repoName = 'helloservice'
-                        def imageTag = "ratneshpuskar/${repoName.toLowerCase()}:${env.BUILD_NUMBER}"
-                        
-                        sh """
-                           echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
-                           docker push ${imageTag}
-                        """
+                    def dockerImageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+
+                    echo "Building Docker image ${dockerImageName}..."
+                    sh "docker build -t ${dockerImageName} ."
+
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'echo $PASSWORD | docker login -u $USERNAME --password-stdin'
+                        echo "Pushing Docker image to Docker Hub..."
+                        sh "docker push ${dockerImageName}"
                     }
                 }
             }
         }
-        
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    def repoName = 'helloservice'
-                    def imageTag = "ratneshpuskar/${repoName.toLowerCase()}:${env.BUILD_NUMBER}"
-                    
                     def deploymentYaml = """
-                    apiVersion: apps/v1
-                    kind: Deployment
-                    metadata:
-                      name: ${repoName}
-                    spec:
-                      replicas: 1
-                      selector:
-                        matchLabels:
-                          app: ${repoName}
-                      template:
-                        metadata:
-                          labels:
-                            app: ${repoName}
-                        spec:
-                          containers:
-                          - name: ${repoName}
-                            image: ${imageTag}
-                            ports:
-                            - containerPort: 5000
-                    """
-                    
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-service-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-service
+  template:
+    metadata:
+      labels:
+        app: hello-service
+    spec:
+      containers:
+      - name: hello-service
+        image: ratneshpuskar/helloservice:${env.BUILD_NUMBER}
+        ports:
+        - containerPort: 5000
+"""
+
                     def serviceYaml = """
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: ${repoName}-service
-                    spec:
-                      type: NodePort
-                      selector:
-                        app: ${repoName}
-                      ports:
-                      - port: 5000
-                        targetPort: 5000
-                        nodePort: 30007
-                    """
-                    
-                    writeFile(file: 'deployment.yaml', text: deploymentYaml)
-                    writeFile(file: 'service.yaml', text: serviceYaml)
-                    
-                    sh """
-                       ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.110.130.203 "kubectl apply -f -" < deployment.yaml 
-                       ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.110.130.203 "kubectl apply -f -" < service.yaml
-                    """
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-service-service
+spec:
+  type: NodePort
+  ports:
+  - port: 5000
+    targetPort: 5000
+    nodePort: 30007
+  selector:
+    app: hello-service
+"""
+
+                    writeFile file: 'deployment.yaml', text: deploymentYaml
+                    writeFile file: 'service.yaml', text: serviceYaml
+
+                    echo "Deploying to Kubernetes..."
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.2.179.84 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.2.179.84 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
     }
-    
+
     post {
         success {
-            echo 'Job completed successfully!'
+            echo "Pipeline executed successfully!"
         }
         failure {
-            echo 'Job failed!'
+            echo "Pipeline execution failed."
         }
     }
 }
