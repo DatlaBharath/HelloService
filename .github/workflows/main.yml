@@ -16,11 +16,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Install Maven
+      - name: Install Maven (if not already installed)
         run: |
           sudo apt update
           sudo apt install -y maven
-      - name: Build with Maven
+      - name: Build project with Maven
         run: mvn clean install -DskipTests
 
   build_image:
@@ -28,31 +28,31 @@ jobs:
     needs: build_project
     steps:
       - name: Build Docker image
-        run: docker build -t sakthisiddu1/helloservice:${{github.run_number}} .
+        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
   push_image:
     runs-on: self-hosted
     needs: build_image
     steps:
-      - name: Log in to Docker Hub
+      - name: Log in to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Push Docker image
-        run: docker push sakthisiddu1/helloservice:${{github.run_number}}
+      - name: Push Docker image to DockerHub
+        run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: self-hosted
     needs: push_image
     steps:
-      - name: Create deployment YAML
+      - name: Generate deployment YAML
         run: |
           echo "
           apiVersion: apps/v1
           kind: Deployment
           metadata:
-            name: helloservice-deployment
+            name: helloservice
           spec:
             replicas: 1
             selector:
@@ -65,28 +65,26 @@ jobs:
               spec:
                 containers:
                 - name: helloservice
-                  image: sakthisiddu1/helloservice:${{github.run_number}}
+                  image: sakthisiddu1/helloservice:${{ github.run_number }}
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
-      - name: Create service YAML
+      - name: Generate service YAML
         run: |
           echo "
           apiVersion: v1
           kind: Service
           metadata:
-            name: helloservice-service
+            name: helloservice
           spec:
+            type: NodePort
+            ports:
+              - port: 5000
+                nodePort: 30007
             selector:
               app: helloservice
-            ports:
-              - protocol: TCP
-                port: 5000
-                targetPort: 5000
-                nodePort: 30007
-            type: NodePort
           " > service.yaml
       - name: Deploy to Kubernetes
         run: |
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@43.205.206.252 "kubectl apply -f -" < deployment.yaml
-          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.206.252 "kubectl apply -f -" < service.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@43.204.22.73 "kubectl apply -f -" < deployment.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@43.204.22.73 " kubectl apply -f -" < service.yaml
