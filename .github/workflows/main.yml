@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Build and Deploy
 
 on:
   push:
@@ -11,21 +11,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-        
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          
-      - name: Install Maven
+
+      - name: Install Maven (if not already installed)
         run: |
           sudo apt update
           sudo apt install -y maven
-          
-      - name: Build with Maven
+
+      - name: Build the project
         run: mvn clean install -DskipTests
-        
+
   build_image:
     runs-on: self-hosted
     needs: build_project
@@ -42,23 +42,23 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          
-      - name: Push Docker image
+
+      - name: Push Docker image to Docker Hub
         run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
-      
+
   deploy:
     runs-on: self-hosted
     needs: push_image
     steps:
-      - name: Create Kubernetes Deployment
+      - name: Create deployment.yaml
         run: |
-          echo "
+          cat <<EOF > deployment.yaml
           apiVersion: apps/v1
           kind: Deployment
           metadata:
             name: helloservice-deployment
           spec:
-            replicas: 1
+            replicas: 2
             selector:
               matchLabels:
                 app: helloservice
@@ -68,15 +68,15 @@ jobs:
                   app: helloservice
               spec:
                 containers:
-                  - name: helloservice
-                    image: sakthisiddu1/helloservice:${{ github.run_number }}
-                    ports:
-                      - containerPort: 5000
-          " > deployment.yaml
-          
-      - name: Create Kubernetes Service
+                - name: helloservice
+                  image: sakthisiddu1/helloservice:${{ github.run_number }}
+                  ports:
+                  - containerPort: 5000
+          EOF
+
+      - name: Create service.yaml
         run: |
-          echo "
+          cat <<EOF > service.yaml
           apiVersion: v1
           kind: Service
           metadata:
@@ -90,12 +90,9 @@ jobs:
                 port: 5000
                 targetPort: 5000
                 nodePort: 30007
-          " > service.yaml
-          
-      - name: Apply Kubernetes Deployment
+          EOF
+
+      - name: Apply Kubernetes configuration
         run: |
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@43.205.233.195 "kubectl apply -f -" < deployment.yaml
-          
-      - name: Apply Kubernetes Service
-        run: |
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@43.205.233.195 "kubectl apply -f -" < service.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.201.13.66 "kubectl apply -f -" < deployment.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.13.66 "kubectl apply -f -" < service.yaml
