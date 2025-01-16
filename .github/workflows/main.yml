@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: 
+    branches:
       - main
 
 jobs:
@@ -23,9 +23,9 @@ jobs:
           sudo apt update
           sudo apt install -y maven
 
-      - name: Build with Maven
+      - name: Build the project using Maven
         run: |
-          mvn clean package -DskipTests=true
+          mvn clean install -DskipTests
 
   build_image:
     runs-on: self-hosted
@@ -33,7 +33,7 @@ jobs:
     steps:
       - name: Build Docker image
         run: |
-          docker build -t undefined/helloservice:${GITHUB_RUN_NUMBER} .
+          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
   push_image:
     runs-on: self-hosted
@@ -47,13 +47,13 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push undefined/helloservice:${GITHUB_RUN_NUMBER}
+          docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: self-hosted
     needs: push_image
     steps:
-      - name: Create Kubernetes deployment and service configuration
+      - name: Create deployment YAML
         run: |
           echo "
           apiVersion: apps/v1
@@ -61,7 +61,7 @@ jobs:
           metadata:
             name: helloservice-deployment
           spec:
-            replicas: 2
+            replicas: 3
             selector:
               matchLabels:
                 app: helloservice
@@ -72,11 +72,13 @@ jobs:
               spec:
                 containers:
                 - name: helloservice
-                  image: undefined/helloservice:${GITHUB_RUN_NUMBER}
+                  image: sakthisiddu1/helloservice:${{ github.run_number }}
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
 
+      - name: Create service YAML
+        run: |
           echo "
           apiVersion: v1
           kind: Service
@@ -87,10 +89,10 @@ jobs:
             selector:
               app: helloservice
             ports:
-            - protocol: TCP
-              port: 5000
-              targetPort: 5000
-              nodePort: 30007
+              - protocol: TCP
+                port: 80
+                targetPort: 5000
+                nodePort: 30007
           " > service.yaml
 
       - name: Deploy to Kubernetes
