@@ -18,22 +18,20 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Maven (if not already installed)
+      - name: Install Maven
         run: |
           sudo apt update
           sudo apt install -y maven
 
-      - name: Build the project using Maven
-        run: |
-          mvn clean install -DskipTests
+      - name: Build with Maven
+        run: mvn clean install -DskipTests
 
   build_image:
     runs-on: self-hosted
     needs: build_project
     steps:
       - name: Build Docker image
-        run: |
-          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
   push_image:
     runs-on: self-hosted
@@ -46,14 +44,13 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Push Docker image
-        run: |
-          docker push sakthisiddu1/helloservice:${{ github.run_number }}
+        run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: self-hosted
     needs: push_image
     steps:
-      - name: Create deployment YAML
+      - name: Create Deployment and Service YAML
         run: |
           echo "
           apiVersion: apps/v1
@@ -61,7 +58,7 @@ jobs:
           metadata:
             name: helloservice-deployment
           spec:
-            replicas: 3
+            replicas: 1
             selector:
               matchLabels:
                 app: helloservice
@@ -77,25 +74,23 @@ jobs:
                   - containerPort: 5000
           " > deployment.yaml
 
-      - name: Create service YAML
-        run: |
           echo "
           apiVersion: v1
           kind: Service
           metadata:
             name: helloservice-service
           spec:
-            type: NodePort
             selector:
               app: helloservice
             ports:
               - protocol: TCP
-                port: 80
+                port: 5000
                 targetPort: 5000
                 nodePort: 30007
+            type: NodePort
           " > service.yaml
 
       - name: Deploy to Kubernetes
         run: |
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@15.206.81.126 "kubectl apply -f -" < deployment.yaml
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@15.206.81.126 "kubectl apply -f -" < service.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@65.2.172.86 "kubectl apply -f -" < deployment.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@65.2.172.86 "kubectl apply -f -" < service.yaml
