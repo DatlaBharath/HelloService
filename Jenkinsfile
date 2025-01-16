@@ -6,8 +6,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: 'main']],
-                    userRemoteConfigs: [[url: 'https://github.com/DatlaBharath/HelloService']]])
+                git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
         stage('Build') {
@@ -18,72 +17,70 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def imgName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
-                    sh "docker build -t ${imgName} ."
-                }
-            }
-        }
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
-                    sh 'echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin'
-                    sh 'docker push ratneshpuskar/helloservice:${env.BUILD_NUMBER}'
+                    def IMAGE = "ratneshpuskar/${env.GIT_URL.split('/').last().tokenize('.').first().toLowerCase()}:${env.BUILD_NUMBER}"
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh 'echo "$PASS" | docker login -u $USER --password-stdin'
+                        sh "docker build -t ${IMAGE} ."
+                        sh "docker push ${IMAGE}"
+                    }
                 }
             }
         }
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    def deploymentYaml = """
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: helloservice-deployment
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: helloservice
-  template:
-    metadata:
-      labels:
-        app: helloservice
-    spec:
-      containers:
-      - name: helloservice
-        image: ratneshpuskar/helloservice:${env.BUILD_NUMBER}
-        ports:
-        - containerPort: 5000
+                    def deployYaml = """
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    metadata:
+                      name: hello-deployment
+                    spec:
+                      replicas: 1
+                      selector:
+                        matchLabels:
+                          app: hello
+                      template:
+                        metadata:
+                          labels:
+                            app: hello
+                        spec:
+                          containers:
+                          - name: hello-service
+                            image: ratneshpuskar/${env.GIT_URL.split('/').last().tokenize('.').first().toLowerCase()}:${env.BUILD_NUMBER}
+                            ports:
+                            - containerPort: 5000
                     """
                     def serviceYaml = """
-apiVersion: v1
-kind: Service
-metadata:
-  name: helloservice-service
-spec:
-  type: NodePort
-  selector:
-    app: helloservice
-  ports:
-    - protocol: TCP
-      port: 5000
-      nodePort: 30007
+                    apiVersion: v1
+                    kind: Service
+                    metadata:
+                      name: hello-service
+                    spec:
+                      selector:
+                        app: hello
+                      ports:
+                      - protocol: TCP
+                        port: 5000
+                        targetPort: 5000
+                        nodePort: 30007
+                      type: NodePort
                     """
-                    writeFile file: 'deployment.yaml', text: deploymentYaml
-                    writeFile file: 'service.yaml', text: serviceYaml
-
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@15.206.69.158 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@15.206.69.158 "kubectl apply -f -" < service.yaml'
+                    sh """
+                    echo "${deployYaml}" > deployment.yaml
+                    echo "${serviceYaml}" > service.yaml
+                    ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.110.127.144 "kubectl apply -f -" < deployment.yaml
+                    ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.110.127.144 "kubectl apply -f -" < service.yaml
+                    """
                 }
             }
         }
     }
     post {
         success {
-            echo 'Deployment successful!'
+            echo 'Deployment was successful.'
         }
         failure {
-            echo 'Deployment failed!'
+            echo 'Deployment failed.'
         }
     }
 }
