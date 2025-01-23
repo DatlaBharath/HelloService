@@ -20,14 +20,14 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y maven
-      - name: Build project
+      - name: Build the project
         run: mvn clean install -DskipTests
 
   build_image:
     runs-on: self-hosted
     needs: build_project
     steps:
-      - name: Build Docker image
+      - name: Build Docker Image
         run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
   push_image:
@@ -39,16 +39,17 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Push Docker image
+      - name: Push Docker Image
         run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: self-hosted
     needs: push_image
     steps:
-      - name: Create deployment YAML
+      - name: Create deployment.yaml
         run: |
-          echo "apiVersion: apps/v1
+          echo "
+          apiVersion: apps/v1
           kind: Deployment
           metadata:
             name: helloservice-deployment
@@ -66,22 +67,26 @@ jobs:
                 - name: helloservice
                   image: sakthisiddu1/helloservice:${{ github.run_number }}
                   ports:
-                  - containerPort: 5000" > deployment.yaml
-      - name: Create service YAML
+                  - containerPort: 5000
+          " > deployment.yaml
+      - name: Create service.yaml
         run: |
-          echo "apiVersion: v1
+          echo "
+          apiVersion: v1
           kind: Service
           metadata:
             name: helloservice-service
           spec:
-            type: NodePort
             selector:
               app: helloservice
             ports:
-              - port: 5000
+              - protocol: TCP
+                port: 5000
                 targetPort: 5000
-                nodePort: 30007" > service.yaml
+                nodePort: 30007
+            type: NodePort
+          " > service.yaml
       - name: Deploy to Kubernetes
         run: |
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
