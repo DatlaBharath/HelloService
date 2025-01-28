@@ -10,4 +10,4 @@ stages:
 Build:
   tasks:
     - script:
-      - echo 'Hello World!!!!'
+      - echo 'Hello all!!'
