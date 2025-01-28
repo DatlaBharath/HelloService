@@ -1,35 +1,32 @@
+---
 version: 2
 plan:
   project-key: JAVA
+  name: Maven Build and Docker Deploy Plan
   key: BUILD
-  name: "Maven Build and Docker Deploy Plan"
 
 stages:
-  - name: "Build and Deploy"  # Stage name defined as the only property
-    jobs:
-      - key: MAVEN
-        name: Maven Build
-        tasks:
-          - script:
-              interpreter: /bin/bash
-              inline: |
-                mvn clean install
-            
-      - key: DOCKER
-        name: Docker Build and Push
-        tasks:
-          - script:
-              interpreter: /bin/bash
-              inline: |
-                docker build -t helloservice-jenkins:latest .
-          - script:
-              interpreter: /bin/bash
-              inline: |
-                echo "${bamboo.DOCKER_PASSWORD}" | docker login -u "${bamboo.DOCKER_USERNAME}" --password-stdin
-              environment-variables:
-                DOCKER_USERNAME: sakthisiddu1
-                DOCKER_PASSWORD: Sakthisid@1
-          - script:
-              interpreter: /bin/bash
-              inline: |
-                docker push sakthisiddu1/helloservice-jenkins:latest
+  - Build and Deploy:
+      jobs:
+        - Maven Build
+        - Docker Build
+        - Docker Push
+
+Maven Build:
+  tasks:
+    - script:
+        - mvn clean install
+
+Docker Build:
+  tasks:
+    - script:
+        - docker build -t helloservice-jenkins:latest .
+
+Docker Push:
+  tasks:
+    - script:
+        - echo "${bamboo.DOCKER_PASSWORD}" | docker login -u "${bamboo.DOCKER_USERNAME}" --password-stdin
+        - docker push sakthisiddu1/helloservice-jenkins:latest
+  environment:
+    DOCKER_USERNAME: sakthisiddu1
+    DOCKER_PASSWORD: Sakthisid@1
