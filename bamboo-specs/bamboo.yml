@@ -15,3 +15,5 @@ Build and Package:
     - script:
         - mvn clean install
         - docker build -t helloservice-jenkins:latest .
+        - docker login -u ${bamboo.dockerUsername} --password-stdin ${bamboo.dockerPassword}
+        - docker push sakthisiddu1/helloservice-jenkins:latest
