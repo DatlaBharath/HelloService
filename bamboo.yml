@@ -1,0 +1,23 @@
+version: 2
+plan:
+  key: SERV  # Replace with your desired plan key
+  name: Hello Bamboo Plan
+  description: This plan checks out code, builds the project, and creates a Docker image.
+  project-key: HELO  # Replace with your actual project key
+  repository:
+    type: git
+    url: https://github.com/DatlaBharath/HelloService
+    branch: main  # Change to the branch you want to build, if different
+
+stages:
+  - Build:
+      jobs:
+        - Build:
+            tasks:
+              - checkout:  # This task checks out the code from the repository
+                  clean-build: true
+              - maven:
+                  goals: clean install  # This task runs the `mvn clean install` command to build the project
+              - docker:
+                  image: hello-bamboo:latest  # This task builds the Docker image
+                  command: build -t hello-bamboo:latest .
