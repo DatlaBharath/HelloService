@@ -10,7 +10,6 @@ stages:
       jobs:
         - Maven Build
         - Docker Build
-        - Docker Push
 
 Maven Build:
   tasks:
@@ -22,11 +21,4 @@ Docker Build:
     - script:
         - docker build -t helloservice-jenkins:latest .
 
-Docker Push:
-  tasks:
-    - script:
-        - echo "${bamboo.DOCKER_PASSWORD}" | docker login -u "${bamboo.DOCKER_USERNAME}" --password-stdin
-        - docker push sakthisiddu1/helloservice-jenkins:latest
-  environment:
-    DOCKER_USERNAME: sakthisiddu1
-    DOCKER_PASSWORD: Sakthisid@1
+
