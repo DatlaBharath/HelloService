@@ -8,12 +8,10 @@ plan:
 stages:
   - Build and Deploy:
       jobs:
-        - Maven Build
-        
+        - Build and Package
 
-Maven Build:
+Build and Package:
   tasks:
     - script:
         - mvn clean install
-
-
+        - docker build -t helloservice-jenkins:latest .
