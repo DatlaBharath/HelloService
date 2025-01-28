@@ -4,17 +4,10 @@ plan:
   key: "BUILD"               # Replace with your plan key (unique identifier for this plan)
   name: "Maven Build Plan"   # The name of your build plan
 stages:
-  - stage:
-      name: "Build"          # Stage name (can be any name, like "Build", "Deploy", etc.)
-      jobs:
-        - job:
-            key: "BUILD"    # Job key (unique identifier for the job)
-            name: "Maven Build Job"  # Human-readable job name
-            tasks:
-              - checkout: 
-                  force-clean-build: true   # Optional: Ensure clean build
-              - script:
-                  interpreter: /bin/bash
-                  script: |
-                    echo "Running Maven build..."
-                    mvn clean install
+  - Build hull:
+    - Build
+
+Build:
+  tasks:
+    - script:
+      - echo 'Hello World!'
