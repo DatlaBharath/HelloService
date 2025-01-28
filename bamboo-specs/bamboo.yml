@@ -1,7 +1,7 @@
 version: 2
 plan:
   key: HEL
-  name: Hello Bamboo Plan
+  name: Hello Plan
   description: This plan checks out code, builds the project, and creates a Docker image.
   project-key: HELLO
   repository:
