@@ -1,0 +1,20 @@
+version: 2
+plan:
+  project-key: "PROJ"        # Replace with your Bamboo project key
+  key: "BUILD"               # Replace with your plan key (unique identifier for this plan)
+  name: "Maven Build Plan"   # The name of your build plan
+stages:
+  - Build:
+      jobs:
+        - Build:
+            tasks:
+              # Task 1: Checkout the source code
+              - checkout: 
+                  # Optional: You can specify a repository here if you have multiple repos
+                  force-clean-build: true
+              # Task 2: Run Maven build
+              - script:
+                  interpreter: /bin/bash
+                  script: |
+                    echo "Running Maven build..."
+                    mvn clean install
