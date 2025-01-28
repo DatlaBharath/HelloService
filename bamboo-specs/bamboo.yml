@@ -14,6 +14,6 @@ Build and Package:
   tasks:
     - script:
         - mvn clean install
-        - docker build -t helloservice-jenkins:latest .
+        - docker build -t helloservice--jenkins:2 .
         - docker login -u ${bamboo.dockerUsername} --password-stdin ${bamboo.dockerPassword}
-        - docker push sakthisiddu1/helloservice-jenkins:latest
+        - docker push sakthisiddu1/helloservice--jenkins:2
