@@ -1,9 +1,6 @@
 version: 2
-project:
-  key: JAVA
-  name: "Maven Build and Docker Deploy Plan"
-
 plan:
+  project-key: JAVA
   key: BUILD
   name: "Maven Build and Docker Deploy Plan"
 
