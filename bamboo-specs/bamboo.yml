@@ -9,16 +9,11 @@ stages:
   - Build and Deploy:
       jobs:
         - Maven Build
-        - Docker Build
+        
 
 Maven Build:
   tasks:
     - script:
         - mvn clean install
-
-Docker Build:
-  tasks:
-    - script:
-        - docker build -t helloservice-jenkins:latest .
 
 
