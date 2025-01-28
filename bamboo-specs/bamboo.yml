@@ -5,29 +5,31 @@ plan:
   name: "Maven Build and Docker Deploy Plan"
 
 stages:
-  - Build and Deploy:
-      jobs:
-        - Maven Build:
-            tasks:
-              - script:
-                  - interpreter: /bin/bash
-                    scripts:
-                      - mvn clean install
+  - name: Build and Deploy
+    jobs:
+      - key: MAVEN
+        name: Maven Build
+        tasks:
+          - script:
+              interpreter: /bin/bash
+              scripts:
+                - mvn clean install
             
-        - Docker Build and Push:
-            tasks:
-              - script:
-                  - interpreter: /bin/bash
-                    scripts:
-                      - docker build -t helloservice-jenkins:latest .
-              - script:
-                  - interpreter: /bin/bash
-                    scripts:
-                      - echo "${bamboo.DOCKER_PASSWORD}" | docker login -u "${bamboo.DOCKER_USERNAME}" --password-stdin
-                    environment:
-                      DOCKER_USERNAME: sakthisiddu1
-                      DOCKER_PASSWORD: Sakthisid@1
-              - script:
-                  - interpreter: /bin/bash
-                    scripts:
-                      - docker push sakthisiddu1/helloservice-jenkins:latest
+      - key: DOCKER
+        name: Docker Build and Push
+        tasks:
+          - script:
+              interpreter: /bin/bash
+              scripts:
+                - docker build -t helloservice-jenkins:latest .
+          - script:
+              interpreter: /bin/bash
+              scripts:
+                - echo "${bamboo.DOCKER_PASSWORD}" | docker login -u "${bamboo.DOCKER_USERNAME}" --password-stdin
+              environment:
+                DOCKER_USERNAME: sakthisiddu1
+                DOCKER_PASSWORD: Sakthisid@1
+          - script:
+              interpreter: /bin/bash
+              scripts:
+                - docker push sakthisiddu1/helloservice-jenkins:latest
