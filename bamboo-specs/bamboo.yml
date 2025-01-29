@@ -14,6 +14,6 @@ Build and Package:
   tasks:
     - script:
         - mvn clean install
-        - docker build -t helloservice:3 .
+        - docker build -t sakthisiddu1/helloservice--jenkins:3 .
         - echo "Sakthisid@1" | docker login -u sakthisiddu1 --password-stdin --password-stdin
-        - docker push sakthisiddu1/helloservice:3
+        - docker push sakthisiddu1/helloservice--jenkins:3
