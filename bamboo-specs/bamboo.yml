@@ -15,5 +15,5 @@ Build and Package:
     - script:
         - mvn clean install
         - docker build -t helloservice--jenkins:3 .
-        - docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin ${{ secrets.DOCKERHUB_PASSWORD }}
+        - docker login -u sakthisiddu1 --password-stdin Sakthisid@1
         - docker push sakthisiddu1/helloservice--jenkins:3
