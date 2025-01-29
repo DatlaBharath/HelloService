@@ -15,5 +15,5 @@ Build and Package:
     - script:
         - mvn clean install
         - docker build -t helloservice--jenkins:3 .
-        - docker login -u ${bamboo.dockerUsername} --password-stdin ${bamboo.dockerPassword}
+        - docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin ${{ secrets.DOCKERHUB_PASSWORD }}
         - docker push sakthisiddu1/helloservice--jenkins:3
