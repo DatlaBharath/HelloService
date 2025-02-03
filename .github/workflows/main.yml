@@ -1,10 +1,10 @@
-name: CI-CD Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
-
+      
 jobs:
   build_project:
     runs-on: self-hosted
@@ -16,11 +16,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Install Maven
+      - name: Install Maven (if not already installed)
         run: |
           sudo apt update
           sudo apt install -y maven
-      - name: Build project
+      - name: Build with Maven
         run: mvn clean install -DskipTests
 
   build_image:
@@ -34,57 +34,56 @@ jobs:
     runs-on: self-hosted
     needs: build_image
     steps:
-      - name: Log in to DockerHub
+      - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Push image to DockerHub
+      - name: Push Docker image
         run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: self-hosted
     needs: push_image
     steps:
-      - name: Create deployment.yaml
-        run: echo "
+      - name: Create deployment and service YAML files
+        run: |
+          echo "
           apiVersion: apps/v1
           kind: Deployment
           metadata:
-            name: hello-deployment
+            name: helloservice-deployment
           spec:
-            replicas: 1
+            replicas: 3
             selector:
               matchLabels:
-                app: hello-app
+                app: helloservice
             template:
               metadata:
                 labels:
-                  app: hello-app
+                  app: helloservice
               spec:
                 containers:
-                - name: hello-container
+                - name: helloservice
                   image: sakthisiddu1/helloservice:${{ github.run_number }}
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
-      - name: Create service.yaml
-        run: echo "
+          echo "
           apiVersion: v1
           kind: Service
           metadata:
-            name: hello-service
+            name: helloservice-service
           spec:
+            type: NodePort
             selector:
-              app: hello-app
+              app: helloservice
             ports:
-              - protocol: TCP
+              - nodePort: 30007
                 port: 5000
                 targetPort: 5000
-                nodePort: 30007
-            type: NodePort
           " > service.yaml
       - name: Deploy to Kubernetes
         run: |
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
