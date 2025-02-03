@@ -1,7 +1,7 @@
 ---
 version: 2
 plan:
-  project-key: JAVA
+  project-key: JAS
   name: Maven Build and Docker Deploy Plan
   key: BUILD
 
