@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Build and Deploy
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 jobs:
   build_project:
     runs-on: self-hosted
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -25,44 +24,41 @@ jobs:
           sudo apt install -y maven
 
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        run: mvn clean install -DskipTests
 
   build_image:
-    runs-on: self-hosted
     needs: build_project
-
+    runs-on: self-hosted
     steps:
-      - name: Build Docker Image
-        run: docker build -t my-docker-username/helloservice:${{ github.run_number }} .
+      - name: Build Docker image
+        run: docker build -t undefined/helloservice:${{ github.run_number }} .
 
   push_image:
-    runs-on: self-hosted
     needs: build_image
-
+    runs-on: self-hosted
     steps:
-      - name: Log in to Docker Hub
+      - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Push Docker Image
-        run: docker push my-docker-username/helloservice:${{ github.run_number }}
+      - name: Push Docker image
+        run: docker push undefined/helloservice:${{ github.run_number }}
 
   deploy:
-    runs-on: self-hosted
     needs: push_image
-
+    runs-on: self-hosted
     steps:
-      - name: Create deployment YAML
+      - name: Generate Deployment YAML
         run: |
-          cat <<EOF >deployment.yaml
+          echo "
           apiVersion: apps/v1
           kind: Deployment
           metadata:
             name: helloservice-deployment
           spec:
-            replicas: 1
+            replicas: 2
             selector:
               matchLabels:
                 app: helloservice
@@ -73,14 +69,14 @@ jobs:
               spec:
                 containers:
                 - name: helloservice
-                  image: my-docker-username/helloservice:${{ github.run_number }}
+                  image: undefined/helloservice:${{ github.run_number }}
                   ports:
                   - containerPort: 5000
-          EOF
+          " > deployment.yaml
 
-      - name: Create service YAML
+      - name: Generate Service YAML
         run: |
-          cat <<EOF >service.yaml
+          echo "
           apiVersion: v1
           kind: Service
           metadata:
@@ -94,10 +90,10 @@ jobs:
                 port: 5000
                 targetPort: 5000
                 nodePort: 30007
-          EOF
-  
-      - name: Apply deployment to Kubernetes
-        run: |
-          scp deployment.yaml ubuntu@13.203.9.97:/home/ubuntu/
-          scp service.yaml ubuntu@13.203.9.97:/home/ubuntu/
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f /home/ubuntu/deployment.yaml && kubectl apply -f /home/ubuntu/service.yaml"
+          " > service.yaml
+
+      - name: Apply Deployment to Kubernetes
+        run: ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
+
+      - name: Apply Service to Kubernetes
+        run: ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
