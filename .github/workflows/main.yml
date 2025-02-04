@@ -44,7 +44,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Push Docker image
-        run: docker push undefined/helloservice:${{ github.run_number }}
+        run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: self-hosted
