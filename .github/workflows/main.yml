@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI Pipeline
 
 on:
   push:
@@ -16,12 +16,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Install Maven (if not already installed)
+      - name: Install Maven
         run: |
           sudo apt update
           sudo apt install -y maven
-      - name: Build project
-        run: mvn clean install -DskipTests
+      - name: Build with Maven, skipping tests
+        run: mvn clean package -DskipTests
 
   build_image:
     runs-on: self-hosted
@@ -46,15 +46,15 @@ jobs:
     runs-on: self-hosted
     needs: push_image
     steps:
-      - name: Generate deployment.yaml
+      - name: Generate Kubernetes deployment YAML
         run: |
           echo "
           apiVersion: apps/v1
           kind: Deployment
           metadata:
-            name: helloservice-deployment
+            name: helloservice
           spec:
-            replicas: 2
+            replicas: 1
             selector:
               matchLabels:
                 app: helloservice
@@ -69,27 +69,26 @@ jobs:
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
-        
-      - name: Generate service.yaml
+
+      - name: Generate Kubernetes service YAML
         run: |
           echo "
           apiVersion: v1
           kind: Service
           metadata:
-            name: helloservice-service
-            labels:
-              app: helloservice
+            name: helloservice
           spec:
             type: NodePort
-            ports:
-            - port: 5000
-              targetPort: 5000
-              nodePort: 30007
             selector:
               app: helloservice
+            ports:
+            - protocol: TCP
+              port: 5000
+              targetPort: 5000
+              nodePort: 30007
           " > service.yaml
-      
-      - name: Deploy to Kubernetes
+
+      - name: Apply Kubernetes resources
         run: |
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
