@@ -24,7 +24,7 @@ jobs:
           sudo apt install -y maven
 
       - name: Build project
-        run: mvn clean install -DskipTests
+        run: mavn clean install -DskipTests
 
   build_image:
     runs-on: self-hosted
