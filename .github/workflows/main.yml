@@ -20,14 +20,14 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y maven
-      - name: Build with Maven
+      - name: Build the project
         run: mvn clean install -DskipTests
 
   build_image:
     runs-on: self-hosted
     needs: build_project
     steps:
-      - name: Build Docker Image
+      - name: Build Docker image
         run: docker build -t undefined/helloservice:${{ github.run_number }} .
 
   push_image:
@@ -35,25 +35,26 @@ jobs:
     needs: build_image
     steps:
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Push Docker Image
+      - name: Push Docker image to Docker Hub
         run: docker push undefined/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: self-hosted
     needs: push_image
     steps:
-      - name: Create deployment YAML
+      - name: Create Kubernetes deployment and service files
         run: |
-          echo "apiVersion: apps/v1
+          echo "
+          apiVersion: apps/v1
           kind: Deployment
           metadata:
             name: helloservice-deployment
           spec:
-            replicas: 2
+            replicas: 1
             selector:
               matchLabels:
                 app: helloservice
@@ -66,21 +67,22 @@ jobs:
                 - name: helloservice
                   image: undefined/helloservice:${{ github.run_number }}
                   ports:
-                  - containerPort: 5000" > deployment.yaml
-      - name: Create service YAML
-        run: |
-          echo "apiVersion: v1
+                  - containerPort: 5000
+          " > deployment.yaml
+          echo "
+          apiVersion: v1
           kind: Service
           metadata:
             name: helloservice-service
           spec:
-            type: NodePort
-            ports:
-            - nodePort: 30007
-              port: 5000
-              targetPort: 5000
             selector:
-              app: helloservice" > service.yaml
+              app: helloservice
+            ports:
+              - protocol: TCP
+                port: 5000
+                nodePort: 30007
+            type: NodePort
+          " > service.yaml
       - name: Deploy to Kubernetes
         run: |
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
