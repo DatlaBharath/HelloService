@@ -22,11 +22,10 @@ jobs:
         java-version: 17
         distribution: 'temurin'
 
-    - name: Set up Maven
-      uses: actions/setup-java@v2
-      with:
-        distribution: 'maven'
-        maven-version: '3.6.3'
+    - name: Install Maven (if not already installed)
+                run: |
+                sudo apt update
+                sudo apt install -y maven
 
     - name: Build with Maven
       run: mvn clean package -DskipTests
