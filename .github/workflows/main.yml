@@ -13,13 +13,14 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
       with:
-        repository: DatlaBharath/HelloService-jenkins
+        repository: DatlaBharath/HelloService
         ref: main
 
     - name: Set up JDK 17
       uses: actions/setup-java@v2
       with:
         java-version: 17
+        distribution: 'temurin'
 
     - name: Set up Maven
       uses: actions/setup-java@v2
