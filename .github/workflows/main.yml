@@ -13,7 +13,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
       with:
-        repository: DatlaBharath/HelloService-jenkins
+        repository: DatlaBharath/HelloService
         ref: main
 
     - name: Set up JDK 17
@@ -22,10 +22,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Maven (if not already installed)
-        run: |
-          sudo apt update
-          sudo apt install -y maven
+    - name: Install Maven (if not already installed)
+      run: |
+        sudo apt update
+        sudo apt install -y maven
 
     - name: Build with Maven
       run: mvn clean install -DskipTests
@@ -33,70 +33,59 @@ jobs:
     - name: Build Docker Image
       run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
-  build_image:
-    runs-on: self-hosted
-    needs: build_project
-    steps:
-      - name: Build Docker image
-        run: |
-          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+    - name: Push Docker Image
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      run: |
+        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+        docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
-  push_image:
-    runs-on: self-hosted
-    needs: build_image
-    steps:
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - name: Push Docker image to Docker Hub
-        run: |
-          docker push sakthisiddu1/helloservice:${{ github.run_number }}
-
-  deploy:
-    runs-on: self-hosted
-    needs: push_image
-    steps:
-      - name: Create deployment YAML and deploy
-        run: |
-          echo "
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: helloservice-deployment
-          spec:
-            replicas: 2
-            selector:
-              matchLabels:
-                app: helloservice
-            template:
-              metadata:
-                labels:
-                  app: helloservice
-              spec:
-                containers:
-                - name: helloservice
-                  image: sakthisiddu1/helloservice:${{ github.run_number }}
-                  ports:
-                  - containerPort: 5000
-          " > deployment.yaml
-
-          echo "
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: helloservice-service
-          spec:
-            type: NodePort
-            selector:
+    - name: Deploy to Kubernetes
+      run: |
+        echo "apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: helloservice-deployment
+          labels:
+            app: helloservice
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
               app: helloservice
-            ports:
-            - port: 5000
-              targetPort: 5000
-              nodePort: 30007
-          " > service.yaml
+          template:
+            metadata:
+              labels:
+                app: helloservice
+            spec:
+              containers:
+              - name: helloservice
+                image: sakthisiddu1/helloservice:${{ github.run_number }}
+                ports:
+                - containerPort: 5000" > deployment.yaml
 
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
-          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
+        echo "apiVersion: v1
+        kind: Service
+        metadata:
+          name: helloservice-service
+        spec:
+          selector:
+            app: helloservice
+          ports:
+          - protocol: TCP
+            port: 5000
+            targetPort: 5000
+            nodePort: 30007
+          type: NodePort" > service.yaml
+
+        ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f deployment.yaml" 
+        ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f service.yaml"    
+
+    - name: Post Success
+      if: success()
+      run: echo 'Deployment was successful'
+
+    - name: Post Failure
+      if: failure()
+      run: echo 'Deployment failed'
