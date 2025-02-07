@@ -20,7 +20,7 @@ Build and Package:
         
     - script:
         - echo "Creating deployment.yaml"
-        - >
+        - |
           cat <<EOF > deployment.yaml
           apiVersion: apps/v1
           kind: Deployment
@@ -44,7 +44,7 @@ Build and Package:
           EOF
         
         - echo "Creating service.yaml"
-        - >
+        - |
           cat <<EOF > service.yaml
           apiVersion: v1
           kind: Service
