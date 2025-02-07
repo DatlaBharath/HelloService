@@ -58,12 +58,10 @@ Build and Package:
             - port: 5000
               targetPort: 5000
               nodePort: 30007
-            externalIPs:
-            - 15.206.94.163
           EOF
         
     - script:
         - echo "Deploying to Kubernetes"
-        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@13.203.9.97:/home/ubuntu/
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.203.9.97 "kubectl apply -f /home/ubuntu/deployment.yaml"
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.203.9.97 "kubectl apply -f /home/ubuntu/service.yaml"
+        - scp -o StrictHostKeyChecking=no -i /var/test.pem  deployment.yaml service.yaml ubuntu@15.206.94.163:/home/ubuntu/
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem  ubuntu@15.206.94.163 "kubectl apply -f /home/ubuntu/deployment.yaml"
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem  ubuntu@15.206.94.163 "kubectl apply -f /home/ubuntu/service.yaml"
