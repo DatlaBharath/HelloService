@@ -1,7 +1,7 @@
 ---
 version: 2
 plan:
-  project-key: ${PROJECT_KEY}
+  project-key: DEP
   name: Maven Build and Docker Deploy Plan
   key: BUILD
 
