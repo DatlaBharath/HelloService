@@ -20,7 +20,7 @@ Build and Package:
         
     - script:
         - echo "Creating deployment.yaml"
-        - echo "
+        - cat <<EOF > deployment.yaml
           apiVersion: apps/v1
           kind: Deployment
           metadata:
@@ -40,10 +40,10 @@ Build and Package:
                   image: sakthisiddu1/helloservice:${bamboo.buildNumber}
                   ports:
                   - containerPort: 5000
-          " > deployment.yaml
+          EOF
         
         - echo "Creating service.yaml"
-        - echo "
+        - cat <<EOF > service.yaml
           apiVersion: v1
           kind: Service
           metadata:
@@ -56,7 +56,7 @@ Build and Package:
             - port: 5000
               targetPort: 5000
               nodePort: 30007
-          " > service.yaml
+          EOF
         
     - script:
         - echo "Deploying to Kubernetes"
