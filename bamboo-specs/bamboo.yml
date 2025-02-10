@@ -1,7 +1,7 @@
 ---
 version: 2
 plan:
-  project-key: HELLO
+  project-key: DEP
   name: Maven Build and Docker Deploy Plan
   key: BUILD
 
@@ -15,7 +15,7 @@ Build and Package:
     - script:
         - mvn clean install -DskipTests
         - docker build -t sakthisiddu1/helloservice:7 .
-        - echo "${bamboo.Sakthisid@1_PASSWORD}" | docker login -u "${bamboo.sakthisiddu1_USERNAME}" --password-stdin
+        - echo "Sakthisid@1" | docker login -u "sakthisiddu1" --password-stdin
         - docker push sakthisiddu1/helloservice:7
 
     - script:
@@ -62,6 +62,6 @@ Build and Package:
 
     - script:
         - echo "Deploying to Kubernetes"
-        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@12.543.56.4:/home/ubuntu/        
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@12.543.56.4 "kubectl apply -f /home/ubuntu/deployment.yaml"   
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@12.543.56.4 "kubectl apply -f /home/ubuntu/service.yaml"
+        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@13.233.94.64:/home/ubuntu/        
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.233.94.64 "kubectl apply -f /home/ubuntu/deployment.yaml"   
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.233.94.64 "kubectl apply -f /home/ubuntu/service.yaml"
