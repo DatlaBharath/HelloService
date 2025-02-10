@@ -15,7 +15,7 @@ Build and Package:
     - script:
         - mvn clean install -DskipTests
         - docker build -t sakthisiddu1/helloservice:5 .
-        - echo "${bamboo.DOCKERHUB_PASSWORD}" | docker login -u "${bamboo.DOCKERHUB_USERNAME}" --password-stdin
+        - echo "Sakthisid@1" | docker login -u "sakthisiddu1" --password-stdin
         - docker push sakthisiddu1/helloservice:5
 
     - script:
