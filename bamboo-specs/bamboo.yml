@@ -27,7 +27,7 @@ Build and Package:
           metadata:
             name: helloservice-deployment
           spec:
-            replicas: 2Sakthisid@1
+            replicas: 2
             selector:
               matchLabels:
                 app: helloservice
