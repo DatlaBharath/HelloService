@@ -1,7 +1,7 @@
 ---
 version: 2
 plan:
-  project-key: ABC
+  project-key: DEP
   name: Maven Build and Docker Deploys Plan
   key: BUILD
 
