@@ -15,11 +15,12 @@ Build and Package:
     - script:
         - mvn clean install -DskipTests
         - docker build -t sakthisiddu1/helloservice:5 .
-        - echo "Sakthisid@1" | docker login -u "sakthisiddu1" --password-stdin
+        - echo "${bamboo.DOCKERHUB_PASSWORD}" | docker login -u "${bamboo.DOCKERHUB_USERNAME}" --password-stdin
         - docker push sakthisiddu1/helloservice:5
+
     - script:
         - echo "Creating deployment.yaml"
-        - >
+        - |
           cat <<EOF > deployment.yaml
           apiVersion: apps/v1
           kind: Deployment
@@ -41,8 +42,9 @@ Build and Package:
                   ports:
                   - containerPort: 5000
           EOF
+
         - echo "Creating service.yaml"
-        - >
+        - |
           cat <<EOF > service.yaml
           apiVersion: v1
           kind: Service
@@ -57,10 +59,9 @@ Build and Package:
               targetPort: 5000
               nodePort: 30007
           EOF
+
     - script:
         - echo "Deploying to Kubernetes"
         - scp -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem deployment.yaml service.yaml ubuntu@13.233.94.64:/home/ubuntu/
         - ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.233.94.64 "kubectl apply -f /home/ubuntu/deployment.yaml"
         - ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.233.94.64 "kubectl apply -f /home/ubuntu/service.yaml"
-
-
