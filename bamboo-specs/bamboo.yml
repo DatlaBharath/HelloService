@@ -55,8 +55,8 @@ Build and Package:
             selector:
               app: helloservice
             ports:
-            - port: 8085
-              targetPort: 8085
+            - port: 5000
+              targetPort: 5000
               nodePort: 30007
           EOF
 
