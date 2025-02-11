@@ -1,3 +1,5 @@
+name: CI/CD Pipeline
+
 on:
   push:
     branches:
@@ -8,25 +10,20 @@ jobs:
     runs-on: self-hosted
 
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v2
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
       with:
-        java-version: '17'
-        distribution: 'temurin'
+        repository: DatlaBharath/HelloService
+        ref: main
 
-    - name: Install Maven
-      run: |
-        sudo apt update
-        sudo apt install -y maven
+    - name: Set up Maven
+      uses: actions/setup-java@v2
+      with:
+        distribution: 'adopt'
+        java-version: '11'
 
     - name: Build with Maven
       run: mvn clean install -DskipTests
-
-    - name: Build Docker Image
-      run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
@@ -34,12 +31,21 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-    - name: Push Docker Image
+    - name: Build Docker image
+      run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+
+    - name: Push Docker image
       run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v1
+      with:
+        version: 'v1.18.0'
 
     - name: Deploy to Kubernetes
       run: |
-        echo "apiVersion: apps/v1
+        echo "
+        apiVersion: apps/v1
         kind: Deployment
         metadata:
           name: helloservice-deployment
@@ -59,9 +65,11 @@ jobs:
               - name: helloservice
                 image: sakthisiddu1/helloservice:${{ github.run_number }}
                 ports:
-                - containerPort: 5000" > deployment.yaml
+                - containerPort: 5000
+        " > deployment.yaml
 
-        echo "apiVersion: v1
+        echo "
+        apiVersion: v1
         kind: Service
         metadata:
           name: helloservice-service
@@ -73,7 +81,16 @@ jobs:
             port: 5000
             targetPort: 5000
             nodePort: 30007
-          type: NodePort" > service.yaml
+          type: NodePort
+        " > service.yaml
 
         ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
         ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
+
+    - name: Deployment status
+      if: success()
+      run: echo 'Deployment was successful'
+
+    - name: Deployment status
+      if: failure()
+      run: echo 'Deployment failed'
