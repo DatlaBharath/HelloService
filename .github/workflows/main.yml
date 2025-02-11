@@ -12,22 +12,28 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-
-    - name: Set up JDK 11
-      uses: actions/setup-java@v2
       with:
-        java-version: '11'
+        repository: 'https://github.com/DatlaBharath/HelloService'
+        ref: 'main'
 
     - name: Set up Maven
       uses: actions/setup-java@v2
       with:
-        distribution: 'maven'
-        maven-version: '3.6.3'
+        distribution: 'adopt'
+        java-version: '17'
+
+    - name: Cache Maven packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
 
     - name: Build with Maven
       run: mvn clean install -DskipTests
 
-    - name: Build Docker image
+    - name: Build Docker Image
       run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
     - name: Log in to Docker Hub
@@ -36,12 +42,18 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-    - name: Push Docker image
+    - name: Push Docker Image
       run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
-    - name: Generate Kubernetes deployment YAML
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v1
+      with:
+        version: 'v1.18.0'
+
+    - name: Create Kubernetes Deployment and Service YAML
       run: |
-        echo "apiVersion: apps/v1
+        echo "
+        apiVersion: apps/v1
         kind: Deployment
         metadata:
           name: helloservice-deployment
@@ -61,11 +73,11 @@ jobs:
               - name: helloservice
                 image: sakthisiddu1/helloservice:${{ github.run_number }}
                 ports:
-                - containerPort: 5000" > deployment.yaml
+                - containerPort: 5000
+        " > deployment.yaml
 
-    - name: Generate Kubernetes service YAML
-      run: |
-        echo "apiVersion: v1
+        echo "
+        apiVersion: v1
         kind: Service
         metadata:
           name: helloservice-service
@@ -77,24 +89,18 @@ jobs:
             port: 5000
             targetPort: 5000
             nodePort: 30007
-          type: NodePort" > service.yaml
-
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v1
-      with:
-        version: 'v1.18.0'
+          type: NodePort
+        " > service.yaml
 
     - name: Deploy to Kubernetes
       run: |
-        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no deployment.yaml ubuntu@3.6.238.137:/home/ubuntu/
-        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no service.yaml ubuntu@3.6.238.137:/home/ubuntu/
+        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no deployment.yaml ubuntu@13.203.9.97:/home/ubuntu/deployment.yaml
+        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no service.yaml ubuntu@13.203.9.97:/home/ubuntu/service.yaml
         ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f /home/ubuntu/deployment.yaml"
         ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f /home/ubuntu/service.yaml"
 
-    - name: Deployment success message
+    - name: Deployment Status
       if: success()
       run: echo 'Deployment was successful'
-
-    - name: Deployment failure message
       if: failure()
       run: echo 'Deployment failed'
