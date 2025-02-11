@@ -20,6 +20,7 @@ jobs:
       uses: actions/setup-java@v2
       with:
         java-version: '17'
+        distribution: 'adopt'
 
     - name: Set up Maven
       uses: actions/setup-java@v2
@@ -31,16 +32,16 @@ jobs:
       run: mvn clean install -DskipTests
 
     - name: Build Docker Image
-      run: docker build -t sakthisiddu1/helloservice:${{github.run_number}} .
+      run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
-    - name: Log in to Docker Hub
+    - name: Log in to DockerHub
       env:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
       run: echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
 
     - name: Push Docker Image
-      run: docker push sakthisiddu1/helloservice:${{github.run_number}}
+      run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
     - name: Deploy to Kubernetes
       env:
@@ -65,7 +66,7 @@ jobs:
             spec:
               containers:
               - name: helloservice
-                image: sakthisiddu1/helloservice:${{github.run_number}}
+                image: sakthisiddu1/helloservice:${{ github.run_number }}
                 ports:
                 - containerPort: 5000
         " > deployment.yaml
@@ -86,8 +87,9 @@ jobs:
           type: NodePort
         " > service.yaml
 
-        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
-        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
+        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f deployment.yaml"
+        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f service.yaml"
+
     - name: Deployment Success
       if: success()
       run: echo 'Deployment was successful'
