@@ -10,47 +10,41 @@ jobs:
     runs-on: self-hosted
 
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v2
       with:
-        repository: 'DatlaBharath/HelloService'
-        ref: 'main'
+        repository: DatlaBharath/HelloService
+        ref: main
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v2
+      with:
+        java-version: '17'
 
     - name: Set up Maven
       uses: actions/setup-java@v2
       with:
-        distribution: 'adopt'
-        java-version: '17'
-
-    - name: Cache Maven packages
-      uses: actions/cache@v2
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
+        distribution: 'maven'
+        maven-version: '3.6.3'
 
     - name: Build with Maven
       run: mvn clean install -DskipTests
 
     - name: Build Docker Image
-      run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+      run: docker build -t sakthisiddu1/helloservice:${{github.run_number}} .
 
     - name: Log in to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      run: echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
 
     - name: Push Docker Image
-      run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
+      run: docker push sakthisiddu1/helloservice:${{github.run_number}}
 
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v1
-      with:
-        version: 'v1.18.0'
-
-    - name: Create Kubernetes Deployment and Service YAML
+    - name: Deploy to Kubernetes
+      env:
+        KUBECONFIG: ${{ secrets.KUBECONFIG }}
       run: |
         echo "
         apiVersion: apps/v1
@@ -71,7 +65,7 @@ jobs:
             spec:
               containers:
               - name: helloservice
-                image: sakthisiddu1/helloservice:${{ github.run_number }}
+                image: sakthisiddu1/helloservice:${{github.run_number}}
                 ports:
                 - containerPort: 5000
         " > deployment.yaml
@@ -92,9 +86,12 @@ jobs:
           type: NodePort
         " > service.yaml
 
-    - name: Deploy to Kubernetes
-      run: |
-        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no deployment.yaml ubuntu@13.203.9.97:/home/ubuntu/deployment.yaml
-        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no service.yaml ubuntu@13.203.9.97:/home/ubuntu/service.yaml
-        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f /home/ubuntu/deployment.yaml"
-        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f /home/ubuntu/service.yaml"
+        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
+        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
+    - name: Deployment Success
+      if: success()
+      run: echo 'Deployment was successful'
+
+    - name: Deployment Failure
+      if: failure()
+      run: echo 'Deployment failed'
