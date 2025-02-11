@@ -12,14 +12,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-      with:
-        repository: 'https://github.com/DatlaBharath/HelloService'
-        ref: 'main'
 
     - name: Set up JDK 11
       uses: actions/setup-java@v2
       with:
-        java-version: '17'
+        java-version: '11'
 
     - name: Set up Maven
       uses: actions/setup-java@v2
@@ -89,8 +86,8 @@ jobs:
 
     - name: Deploy to Kubernetes
       run: |
-        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no deployment.yaml ubuntu@13.203.9.97:/home/ubuntu/
-        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no service.yaml ubuntu@13.203.9.97:/home/ubuntu/
+        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no deployment.yaml ubuntu@3.6.238.137:/home/ubuntu/
+        scp -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no service.yaml ubuntu@3.6.238.137:/home/ubuntu/
         ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f /home/ubuntu/deployment.yaml"
         ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f /home/ubuntu/service.yaml"
 
