@@ -1,7 +1,7 @@
 ---
 version: 2
 plan:
-    project-key: AUT
+    project-key: JAV
     name: Maven Build and Docker Deploy Plan
     key: BUILD
 
@@ -40,7 +40,7 @@ Build and Package:
                   - name: helloservice
                     image: sakthisiddu1/helloservice:3
                     ports:
-                    - containerPort: 5000
+                    - containerPort: 8085
             EOF
         
         - echo "Creating service.yaml"
@@ -55,13 +55,13 @@ Build and Package:
               selector:
                 app: helloservice
               ports:
-              - port: 5000
-                targetPort: 5000
+              - port: 8085
+                targetPort: 8085
                 nodePort: 30007
             EOF
         
     - script:
         - echo "Deploying to Kubernetes"
-        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@65.2.187.234:/home/ubuntu/
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@65.2.187.234 "kubectl apply -f /home/ubuntu/deployment.yaml"
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@65.2.187.234 "kubectl apply -f /home/ubuntu/service.yaml"
+        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@:/home/ubuntu/
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@ "kubectl apply -f /home/ubuntu/deployment.yaml"
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@ "kubectl apply -f /home/ubuntu/service.yaml"
