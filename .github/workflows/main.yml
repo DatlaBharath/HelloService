@@ -1,93 +1,34 @@
-name: CI/CD Pipeline
+name: Basic Pipeline
 
 on:
   push:
     branches:
       - main
+  schedule:
+    - cron: 'H/5 * * * *'
 
 jobs:
   build:
     runs-on: self-hosted
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
 
-    - name: Build with Maven
-      run: mvn clean install -DskipTests
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 14
+          cache: npm
+          cache-dependency-path:
+            - server/app/package-lock.json
+            - frontend/app/package-lock.json
 
-    - name: Build Docker Image
-      run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-    - name: Push Docker Image
-      run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
-
-    - name: Set up Kubernetes
-      uses: azure/setup-kubectl@v1
-      with:
-        version: 'latest'
-
-    - name: Deploy to Kubernetes
-      run: |
-        echo "
-        apiVersion: apps/v1
-        kind: Deployment
-        metadata:
-          name: helloservice-deployment
-          labels:
-            app: helloservice
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              app: helloservice
-          template:
-            metadata:
-              labels:
-                app: helloservice
-            spec:
-              containers:
-              - name: helloservice
-                image: sakthisiddu1/helloservice:${{ github.run_number }}
-                ports:
-                - containerPort: 5000
-        " > deployment.yaml
-
-        echo "
-        apiVersion: v1
-        kind: Service
-        metadata:
-          name: helloservice-service
-        spec:
-          selector:
-            app: helloservice
-          ports:
-          - protocol: TCP
-            port: 5000
-            targetPort: 5000
-            nodePort: 30007
-          type: NodePort
-        " > service.yaml
-
-        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
-        ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
-
-    - name: Post Success
-      if: success()
-      run: echo 'Deployment was successful'
-
-    - name: Post Failure
-      if: failure()
-      run: echo 'Deployment failed'
+      - name: List directory contents
+        run: ls
