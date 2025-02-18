@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Migrate from Jenkins to GitHub Actions
 
 on:
   push:
@@ -10,82 +10,42 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          repository: DatlaBharath/HelloService
-          ref: main
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Set up Java 11
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '11'
 
-      - name: Build with Maven
-        run: mvn clean install -DskipTests
+    - name: Set up custom Java package
+      run: |
+        download_url="https://example.com/java/jdk/6u45-b06/jdk-6u45-linux-x64.tar.gz"
+        wget -O $RUNNER_TEMP/java_package.tar.gz $download_url
+    - uses: actions/setup-java@v4
+      with:
+        distribution: 'jdkfile'
+        jdkFile: ${{ runner.temp }}/java_package.tar.gz
+        java-version: '1.6'
+        architecture: x64
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+    - name: Set up multiple JDKs
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: |
+          8
+          11
 
-      - name: Build Docker Image
-        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+    - name: Set up Java 15
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '15'
 
-      - name: Push Docker Image
-        run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
+    - name: Build with Maven
+      run: mvn clean install
 
-      - name: Deploy to Kubernetes
-        run: |
-          echo "
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: helloservice-deployment
-            labels:
-              app: helloservice
-          spec:
-            replicas: 1
-            selector:
-              matchLabels:
-                app: helloservice
-            template:
-              metadata:
-                labels:
-                  app: helloservice
-              spec:
-                containers:
-                - name: helloservice
-                  image: sakthisiddu1/helloservice:${{ github.run_number }}
-                  ports:
-                  - containerPort: 5000
-          " > deployment.yaml
-
-          echo "
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: helloservice-service
-          spec:
-            selector:
-              app: helloservice
-            ports:
-            - protocol: TCP
-              port: 5000
-              targetPort: 5000
-              nodePort: 30007
-            type: NodePort
-          " > service.yaml
-
-          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
-          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
-
-      - name: Post Deployment Success
-        if: success()
-        run: echo 'Deployment was successful'
-
-      - name: Post Deployment Failure
-        if: failure()
-        run: echo 'Deployment failed'
+    - name: Run tests
+      run: mvn test
