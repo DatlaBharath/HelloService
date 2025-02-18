@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          repository: DatlaBharath/HelloService
+          ref: main
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -33,11 +36,6 @@ jobs:
 
       - name: Push Docker Image
         run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
-
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v1
-        with:
-          version: 'latest'
 
       - name: Deploy to Kubernetes
         run: |
@@ -84,10 +82,10 @@ jobs:
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
 
-      - name: Post success message
+      - name: Post Deployment Success
         if: success()
         run: echo 'Deployment was successful'
 
-      - name: Post failure message
+      - name: Post Deployment Failure
         if: failure()
         run: echo 'Deployment failed'
