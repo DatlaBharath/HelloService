@@ -81,10 +81,10 @@ jobs:
         ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
         ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
 
-    - name: Deployment Success
+    - name: Post Success
       if: success()
       run: echo 'Deployment was successful'
 
-    - name: Deployment Failure
+    - name: Post Failure
       if: failure()
       run: echo 'Deployment failed'
