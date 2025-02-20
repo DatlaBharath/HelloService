@@ -6,61 +6,45 @@ on:
       - main
 
 jobs:
-  build_project:
+  build:
     runs-on: self-hosted
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
 
-      - name: Set up JDK 17
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
+          java-version: '17'
 
-      - name: Install Maven (if not already installed)
-        run: |
-          sudo apt update
-          sudo apt install -y maven
-
-      - name: Build project
+      - name: Build with Maven
         run: mvn clean install -DskipTests
 
-  build_image:
-    runs-on: self-hosted
-    needs: build_project
-    steps:
-      - name: Build Docker image
-        run: |
-          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+      - name: Build Docker Image
+        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
-  push_image:
-    runs-on: self-hosted
-    needs: build_image
-    steps:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Push Docker image to Docker Hub
-        run: |
-          docker push sakthisiddu1/helloservice:${{ github.run_number }}
+      - name: Push Docker Image
+        run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
-  deploy:
-    runs-on: self-hosted
-    needs: push_image
-    steps:
-      - name: Create deployment YAML and deploy
+      - name: Deploy to Kubernetes
         run: |
           echo "
           apiVersion: apps/v1
           kind: Deployment
           metadata:
             name: helloservice-deployment
+            labels:
+              app: helloservice
           spec:
-            replicas: 2
+            replicas: 1
             selector:
               matchLabels:
                 app: helloservice
@@ -75,21 +59,28 @@ jobs:
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
-
           echo "
           apiVersion: v1
           kind: Service
           metadata:
             name: helloservice-service
           spec:
-            type: NodePort
             selector:
               app: helloservice
             ports:
-            - port: 5000
+            - protocol: TCP
+              port: 5000
               targetPort: 5000
               nodePort: 30007
+            type: NodePort
           " > service.yaml
-
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
+
+      - name: Deployment Success
+        if: success()
+        run: echo 'Deployment was successful'
+
+      - name: Deployment Failure
+        if: failure()
+        run: echo 'Deployment failed'
