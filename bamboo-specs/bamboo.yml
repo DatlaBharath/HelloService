@@ -1,8 +1,8 @@
 ---
 version: 2
 plan:
-    project-key: AUT
-    name: Maven Build and Docker Da Plan
+    project-key: AU
+    name: Maven Build and Docker Deploy Plan
     key: BUILD
 
 stages:
