@@ -37,7 +37,7 @@ Build and Package:
                 spec:
                   containers:
                   - name: helloservice
-                    image: sakthisiddu1/helloservice:4
+                    image: sakthisiddu1/helloservice:5
                     ports:
                     - containerPort: 5000
             EOF
