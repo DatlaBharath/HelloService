@@ -13,7 +13,7 @@ Build and Package:
     tasks:
     - script:
         - mvn clean install -DskipTests
-        - docker bild -t sakthisiddu1/helloservice:${bamboo.buildNumber} .
+        - docker build -t sakthisiddu1/helloservice:${bamboo.buildNumber} .
         - echo "Sakthisid@1" | docker login -u "sakthisiddu1" --password-stdin
         - docker push sakthisiddu1/helloservice:${bamboo.buildNumber}
         
