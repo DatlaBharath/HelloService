@@ -1,9 +1,9 @@
 ---
 version: 2
 plan:
-    project-key: AU
+    project-key: AUTT
     name: Maven Build and Docker Deploy Plan
-    key: MVE
+    key: MVEAN
 
 stages:
     - Build and Deploy:
