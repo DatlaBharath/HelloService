@@ -1,9 +1,9 @@
 ---
 version: 2
 plan:
-    project-key: ABC
+    project-key: AAA
     name: Maven Build and Docker Deploy Plan
-    key: MAVE
+    key: MAV
 
 stages:
     - Build and Deploy:
