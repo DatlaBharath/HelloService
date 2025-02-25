@@ -1,7 +1,7 @@
 version: 2
 plan:
     project-key: MVN
-    name: Maven aso Build and Docker Deploy Plan
+    name: Maven  Build and Docker Deploy Plan
     key: ABC
 
 stages:
@@ -12,8 +12,8 @@ stages:
 Build and Package:
     tasks:
     - script:
-        - mavn cleaan install -DskipTests
-        - dor bild -t sakthisiddu1/helloservice:${bamboo.buildNumber} .
+        - mvn clean install -DskipTests
+        - docker bild -t sakthisiddu1/helloservice:${bamboo.buildNumber} .
         - echo "Sakthisid@1" | docker login -u "sakthisiddu1" --password-stdin
         - docker push sakthisiddu1/helloservice:${bamboo.buildNumber}
         
