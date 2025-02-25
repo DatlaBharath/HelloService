@@ -1,9 +1,9 @@
 ---
 version: 2
 plan:
-    project-key: AUTO
+    project-key: AUT
     name: Maven Build and Docker Deploy Plan
-    key: MAVEN
+    key: MVEN
 
 stages:
     - Build and Deploy:
