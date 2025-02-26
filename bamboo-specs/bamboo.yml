@@ -1,8 +1,9 @@
+---
 version: 2
 plan:
-    project-key: AUT
+    project-key: ABC
     name: Maven Build and Docker Deploy Plan
-    key: JAV
+    key: MAV
 
 stages:
     - Build and Deploy:
