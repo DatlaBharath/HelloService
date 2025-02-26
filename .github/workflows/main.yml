@@ -1,4 +1,4 @@
-name: Migrate from Jenkins to GitHub Actions
+name: Migrate Jenkins to GitHub Actions
 
 on:
   push:
@@ -12,29 +12,15 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+    - name: Run shell commands
+      run: |
+        # Print Hello World message
+        echo "Hello, Jenkins!"
 
-    - name: Build with Maven
-      run: mvn clean install
+        # Create a simple text file
+        echo "This is a basic Jenkins job script!" > hello.txt
 
-    - name: Build Docker image
-      run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-    - name: Push Docker image to Docker Hub
-      run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
-
-    - name: Logout from Docker Hub
-      if: always()
-      run: docker logout
+        # Print the content of the file
+        cat hello.txt
