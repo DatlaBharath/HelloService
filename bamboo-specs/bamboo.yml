@@ -2,7 +2,7 @@
 version: 2
 plan:
     project-key: AUT
-    name: Maven Build and also s Docker Deploy Plan
+    name: Maven Build and alsoDocker Deploy Plan
     key: MAV
 
 stages:
@@ -13,8 +13,8 @@ stages:
 Build and Package:
     tasks:
     - script:
-        - mvan clean install -DskipTests
-        - docker build -t sakthisiddu1/helloservice:${bamboo.buildNumber} .
+        - mwvaan cleaan install -DskipTests
+        - docaaker bld -t sakthisiddu1/helloservice:${bamboo.buildNumber} .
         - echo "Sakthisid@1" | docker login -u "sakthisiddu1" --password-stdin
         - docker push sakthisiddu1/helloservice:${bamboo.buildNumber}
         
