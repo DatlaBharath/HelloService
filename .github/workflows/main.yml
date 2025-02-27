@@ -1,4 +1,4 @@
-name: Migrate from Jenkins
+name: CI Pipeline
 
 on:
   push:
@@ -10,16 +10,76 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Run shell command
-        run: echo "hello world"
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
 
-      - name: Post build success
+      - name: Build with Maven
+        run: mvn clean install -DskipTests
+
+      - name: Build Docker Image
+        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+
+      - name: Push Docker Image
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        run: |
+          echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+          docker push sakthisiddu1/helloservice:${{ github.run_number }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          echo "
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: helloservice-deployment
+            labels:
+              app: helloservice
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: helloservice
+            template:
+              metadata:
+                labels:
+                  app: helloservice
+              spec:
+                containers:
+                - name: helloservice
+                  image: sakthisiddu1/helloservice:${{ github.run_number }}
+                  ports:
+                  - containerPort: 5000
+          " > deployment.yaml
+          echo "
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: helloservice-service
+          spec:
+            selector:
+              app: helloservice
+            ports:
+            - protocol: TCP
+              port: 5000
+              targetPort: 5000
+              nodePort: 30007
+            type: NodePort
+          " > service.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
+
+      - name: Deployment Success
         if: success()
-        run: echo "Build succeeded"
+        run: echo 'Deployment was successful'
 
-      - name: Post build failure
+      - name: Deployment Failure
         if: failure()
-        run: echo "Build failed"
+        run: echo 'Deployment failed'
