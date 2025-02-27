@@ -10,16 +10,16 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Run shell command
         run: echo "hello world"
 
-      - name: Post success
+      - name: Post build success
         if: success()
         run: echo "Build succeeded"
 
-      - name: Post failure
+      - name: Post build failure
         if: failure()
         run: echo "Build failed"
