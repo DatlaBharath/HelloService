@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
@@ -21,17 +21,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Maven clean install
+      - name: Build with Maven
         run: mvn clean install
 
       - name: Build Docker image
         run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
       - name: Log in to Docker Hub
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-        run: echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+        run: echo Sakthisid@1 | docker login -u sakthisiddu1 --password-stdin
 
       - name: Push Docker image to Docker Hub
         run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
