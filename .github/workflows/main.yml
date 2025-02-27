@@ -1,10 +1,7 @@
-name: CI
+name: CI Pipeline
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
     branches:
       - main
 
@@ -13,7 +10,8 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -21,25 +19,68 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Running Maven clean install
-        run: mvn clean install
+      - name: Build with Maven
+        run: mvn clean install -DskipTests
 
-      - name: Build Docker image
+      - name: Build Docker Image
         run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
       - name: Log in to Docker Hub
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-        run: echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Push Docker image to Docker Hub
+      - name: Push Docker Image
         run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
-      - name: Process completed successfully
-        if: success()
-        run: echo "Process completed successfully!"
+      - name: Deploy to Kubernetes
+        run: |
+          echo "
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: helloservice-deployment
+            labels:
+              app: helloservice
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: helloservice
+            template:
+              metadata:
+                labels:
+                  app: helloservice
+              spec:
+                containers:
+                - name: helloservice
+                  image: sakthisiddu1/helloservice:${{ github.run_number }}
+                  ports:
+                  - containerPort: 5000
+          " > deployment.yaml
+          echo "
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: helloservice-service
+          spec:
+            selector:
+              app: helloservice
+            ports:
+            - protocol: TCP
+              port: 5000
+              targetPort: 5000
+              nodePort: 30007
+            type: NodePort
+          " > service.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
 
-      - name: Process failed
+      - name: Deployment Status
+        if: success()
+        run: echo 'Deployment was successful'
+
+      - name: Deployment Status
         if: failure()
-        run: echo "Process failed!"
+        run: echo 'Deployment failed'
