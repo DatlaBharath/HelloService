@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -21,13 +21,25 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build with Maven
+      - name: Running Maven clean install
         run: mvn clean install
 
-      - name: Post Build Cleanup
-        if: success()
-        run: echo "Build succeeded, performing cleanup."
+      - name: Build Docker image
+        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
-      - name: Post Build Failure
+      - name: Log in to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+
+      - name: Push Docker image to Docker Hub
+        run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
+
+      - name: Process completed successfully
+        if: success()
+        run: echo "Process completed successfully!"
+
+      - name: Process failed
         if: failure()
-        run: echo "Build failed, performing cleanup."
+        run: echo "Process failed!"
