@@ -36,8 +36,7 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          echo "
-          apiVersion: apps/v1
+          echo "apiVersion: apps/v1
           kind: Deployment
           metadata:
             name: helloservice-deployment
@@ -57,10 +56,9 @@ jobs:
                 - name: helloservice
                   image: sakthisiddu1/helloservice:${{ github.run_number }}
                   ports:
-                  - containerPort: 5000
-          " > deployment.yaml
-          echo "
-          apiVersion: v1
+                  - containerPort: 5000" > deployment.yaml
+
+          echo "apiVersion: v1
           kind: Service
           metadata:
             name: helloservice-service
@@ -72,15 +70,15 @@ jobs:
               port: 5000
               targetPort: 5000
               nodePort: 30007
-            type: NodePort
-          " > service.yaml
+            type: NodePort" > service.yaml
+
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
 
-      - name: Deployment Success
+      - name: Deployment status
         if: success()
         run: echo 'Deployment was successful'
 
-      - name: Deployment Failure
+      - name: Deployment status
         if: failure()
         run: echo 'Deployment failed'
