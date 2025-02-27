@@ -1,10 +1,7 @@
-name: CI Pipeline
+name: Migrate from Jenkins
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
     branches:
       - main
 
@@ -13,33 +10,16 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+      - name: Run shell command
+        run: echo "hello world"
 
-      - name: Build with Maven
-        run: mvn clean install
-
-      - name: Build Docker image
-        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - name: Push Docker image to Docker Hub
-        run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
-
-      - name: Process completed successfully
+      - name: Post build success
         if: success()
-        run: echo "Process completed successfully!"
+        run: echo "Build succeeded"
 
-      - name: Process failed
+      - name: Post build failure
         if: failure()
-        run: echo "Process failed!"
+        run: echo "Build failed"
