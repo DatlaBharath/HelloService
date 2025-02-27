@@ -22,14 +22,14 @@ jobs:
       - name: Build with Maven
         run: mvn clean install -DskipTests
 
-      - name: Build Docker Image
-        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build Docker Image
+        run: docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
       - name: Push Docker Image
         run: docker push sakthisiddu1/helloservice:${{ github.run_number }}
@@ -77,10 +77,10 @@ jobs:
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
 
-      - name: Deployment Status
+      - name: Deployment status
         if: success()
         run: echo 'Deployment was successful'
 
-      - name: Deployment Status
+      - name: Deployment status
         if: failure()
         run: echo 'Deployment failed'
