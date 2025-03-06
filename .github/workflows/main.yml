@@ -6,20 +6,19 @@ on:
       - main
 
 jobs:
-  build:
-    runs-on: self-hosted
-
+  curl_request:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Execute CURL request and capture response
+        id: curl_response
+        run: |
+          # Capture the response from the original API
+          response=$(curl -s http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/random-data)
+          
+          # Log the response in GitHub Actions log
+          echo "Curl response: $response"
 
-      - name: Run shell command
-        run: echo "hello world"
-
-      - name: Post build success
-        if: success()
-        run: echo "Build succeeded"
-
-      - name: Post build failure
-        if: failure()
-        run: echo "Build failed"
+          # Send the response to your backend to be stored in a file
+          curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/save-curl-response \
+            -H "Content-Type: application/json" \
+            -d '{"response": "'"$response"'"}'
