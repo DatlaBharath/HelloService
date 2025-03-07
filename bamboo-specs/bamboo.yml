@@ -2,8 +2,8 @@
 version: 2
 plan:
     project-key: SAM
-    name: Maven and Build and Docker Deploy Plan
-    key: SAM
+    name: Maven Build and Docker Deploy Plan
+    key: MVN
 
 stages:
     - Build and Deploy:
@@ -57,11 +57,11 @@ Build and Package:
               ports:
               - port: 5000
                 targetPort: 5000
-                nodePort: 30008
+                nodePort: 30007
             EOF
         
     - script:
         - echo "Deploying to Kubernetes"
-        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@3.109.60.121:/home/ubuntu/
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.109.60.121 "kubectl apply -f /home/ubuntu/deployment.yaml"
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.109.60.121 "kubectl apply -f /home/ubuntu/service.yaml"
+        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@13.201.25.224:/home/ubuntu/
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.201.25.224 "kubectl apply -f /home/ubuntu/deployment.yaml"
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.201.25.224 "kubectl apply -f /home/ubuntu/service.yaml"
