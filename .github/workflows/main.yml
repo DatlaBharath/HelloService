@@ -13,13 +13,12 @@ jobs:
         id: curl_response
         run: |
           # Capture the response from the original API
-          response=$(curl -s http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/random-data) 
+          response=$(curl -s http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/random-data)
           
           # Log the response in GitHub Actions log
           echo "Curl response: $response"
-          
           # Send the response to your backend to be stored in a file
-          curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/save-curl-response \
+          curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response \
             -H "Content-Type: application/json" \
             -d '{"response": "'"$response"'"}'
 
