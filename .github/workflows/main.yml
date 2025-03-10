@@ -1,69 +1,110 @@
-name: Pipeline with User Confirmation
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
-      - main  # You can specify which branches trigger the workflow
-  workflow_dispatch:
-    inputs:
-      proceed_after_stage1:
-        description: 'Proceed to next stages after Stage 1?'
-        required: true
-        default: 'false'
-        type: boolean
+      - main
 
 jobs:
-  stage1:
-    name: Stage 1
-    runs-on: ubuntu-latest
+  curl_request:
+    runs-on: self-hosted
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      
-      - name: Run Stage 1 tasks
-        run: echo "Running Stage 1 tasks"
-        
-      - name: Stage 1 completed - check input value
+      - name: Execute CURL request and capture response
+        id: curl_response
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            if [ "${{ github.event.inputs.proceed_after_stage1 }}" == "true" ]; then
-              echo "Will proceed to next stages"
-            else
-              echo "Will stop after this stage"
-            fi
-          else
-            echo "This was triggered by push, will proceed to next stages"
-          fi
+          # Capture the response from the original API
+          response=$(curl -s http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/random-data) 
+          
+          # Log the response in GitHub Actions log
+          echo "Curl response: $response"
+          
+          # Send the response to your backend to be stored in a file
+          curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/save-curl-response \
+            -H "Content-Type: application/json" \
+            -d '{"response": "'"$response"'"}'
 
-  stage2:
-    name: Stage 2
-    needs: stage1
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.proceed_after_stage1 == 'true') }}
-    runs-on: ubuntu-latest
+  build_project:
+    runs-on: self-hosted
+    needs: curl_request
     steps:
-      - name: Run Stage 2 tasks
-        run: echo "Running Stage 2 tasks"
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-  stage3:
-    name: Stage 3
-    needs: stage2
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Stage 3 tasks
-        run: echo "Running Stage 3 tasks"
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-  stage4:
-    name: Stage 4
-    needs: stage3
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Stage 4 tasks
-        run: echo "Running Stage 4 tasks"
+      - name: Install Maven (if not already installed)
+        run: |
+          sudo apt update
+          sudo apt install -y maven
+      - name: Build project
+        run: mvn clean install -DskipTests
 
-  stage5:
-    name: Stage 5
-    needs: stage4
-    runs-on: ubuntu-latest
+  build_image:
+    runs-on: self-hosted
+    needs: build_project
     steps:
-      - name: Run Stage 5 tasks
-        run: echo "Running Stage 5 tasks"
+      - name: Build Docker image
+        run: |
+          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+
+  push_image:
+    runs-on: self-hosted
+    needs: build_image
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push sakthisiddu1/helloservice:${{ github.run_number }}
+
+  deploy:
+    runs-on: self-hosted
+    needs: push_image
+    steps:
+      - name: Create deployment YAML and deploy
+        run: |
+          echo "
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: helloservice-deployment
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: helloservice
+            template:
+              metadata:
+                labels:
+                  app: helloservice
+              spec:
+                containers:
+                - name: helloservice
+                  image: sakthisiddu1/helloservice:${{ github.run_number }}
+                  ports:
+                  - containerPort: 5000
+          " > deployment.yaml
+          echo "
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: helloservice-service
+          spec:
+            type: NodePort
+            selector:
+              app: helloservice
+            ports:
+            - port: 5000
+              targetPort: 5000
+              nodePort: 30007
+          " > service.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml 
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
