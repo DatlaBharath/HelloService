@@ -1,10 +1,8 @@
 name: CI/CD Pipeline
-
 on:
   push:
     branches:
       - main
-
 jobs:
   curl_request:
     runs-on: self-hosted
@@ -18,10 +16,13 @@ jobs:
           # Log the response in GitHub Actions log
           echo "Curl response: $response"
           
+          # Escape special characters in the JSON response
+          escaped_response=$(echo "$response" | sed 's/"/\\"/g')
+          
           # Send the response to another API endpoint (POST request)
           curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response \
             -H "Content-Type: application/json" \
-            -d "{\"response\": \"$response\"}"
+            -d "{\"response\": \"$escaped_response\"}"
           
           # Check if the response contains 'success': true (example)
           if [[ "$response" == *'"success":true'* ]]; then
