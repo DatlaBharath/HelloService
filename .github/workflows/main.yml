@@ -20,7 +20,7 @@ jobs:
 
           curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response \
             -H "Content-Type: application/json" \
-            -d '{"response": \"$response\"}'
+            -d '{"response": "$response"}'
           # Check if the response contains 'success': true (example)
           if [[ "$response" == *'"success":true'* ]]; then
             echo "Success response received."
