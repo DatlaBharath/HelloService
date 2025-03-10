@@ -1,6 +1,9 @@
 name: Pipeline with User Confirmation
 
 on:
+  push:
+    branches:
+      - main  # You can specify which branches trigger the workflow
   workflow_dispatch:
     inputs:
       proceed_after_stage1:
@@ -22,16 +25,20 @@ jobs:
         
       - name: Stage 1 completed - check input value
         run: |
-          if [ "${{ github.event.inputs.proceed_after_stage1 }}" == "true" ]; then
-            echo "Will proceed to next stages"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.proceed_after_stage1 }}" == "true" ]; then
+              echo "Will proceed to next stages"
+            else
+              echo "Will stop after this stage"
+            fi
           else
-            echo "Will stop after this stage"
+            echo "This was triggered by push, will proceed to next stages"
           fi
 
   stage2:
     name: Stage 2
     needs: stage1
-    if: ${{ github.event.inputs.proceed_after_stage1 == 'true' }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.proceed_after_stage1 == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - name: Run Stage 2 tasks
