@@ -26,11 +26,14 @@ jobs:
           curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response \
                 -H "Content-Type: application/json" \
                 -d "{\"response\": \"$escaped_response\"}"
-          if [[ "$response" == *'"success":true'* ]]; then
-            echo "Success response received."
+          total_vulnerabilities=$(echo $response | jq -r '.total_vulnerabilites')
+
+          # Check if total_vulnerabilites is less than or equal to 0
+          if [[ $total_vulnerabilities -le 0 ]]; then
+            echo "Success: No vulnerabilities found."
             echo "status=true" >> $GITHUB_ENV
           else
-            echo "Failure response received."
+            echo "Failure: Found $total_vulnerabilities vulnerabilities."
             echo "status=false" >> $GITHUB_ENV
           fi
 
