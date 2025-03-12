@@ -24,22 +24,21 @@ jobs:
           escaped_response=$(echo "$response" | sed 's/"/\\"/g')
           echo "Curl response: $response"
           curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response \
-                -H "Content-Type: application/json" \
-                -d "{\"response\": \"$escaped_response\"}"
+               -H "Content-Type: application/json" \
+               -d "{\"response\": \"$escaped_response\"}"
+          
           total_vulnerabilities=$(echo $response | jq -r '.total_vulnerabilites')
-
-          # Check if total_vulnerabilites is less than or equal to 0
           if [[ $total_vulnerabilities -le 0 ]]; then
             echo "Success: No vulnerabilities found."
             echo "status=true" >> $GITHUB_ENV
           else
             echo "Failure: Found $total_vulnerabilities vulnerabilities."
             echo "status=false" >> $GITHUB_ENV
-          fi
 
   build_project:
     runs-on: self-hosted
     needs: curl_request
+    if: ${{ needs.curl_request.outputs.status == 'true' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -61,6 +60,7 @@ jobs:
   build_image:
     runs-on: self-hosted
     needs: build_project
+    if: ${{ needs.curl_request.outputs.status == 'true' }}
     steps:
       - name: Build Docker image
         run: |
@@ -69,6 +69,7 @@ jobs:
   push_image:
     runs-on: self-hosted
     needs: build_image
+    if: ${{ needs.curl_request.outputs.status == 'true' }}
     steps:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -83,6 +84,7 @@ jobs:
   deploy:
     runs-on: self-hosted
     needs: push_image
+    if: ${{ needs.curl_request.outputs.status == 'true' }}
     steps:
       - name: Create deployment YAML and deploy
         run: |
@@ -107,7 +109,7 @@ jobs:
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
-          
+         
           echo "
           apiVersion: v1
           kind: Service
@@ -119,9 +121,9 @@ jobs:
               app: helloservice
               ports:
               - port: 5000
-                targetPort: 5000
-                nodePort: 30007
+                  targetPort: 5000
+                  nodePort: 30007
           " > service.yaml
-          
+         
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
