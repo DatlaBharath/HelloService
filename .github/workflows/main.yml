@@ -34,6 +34,7 @@ jobs:
           else
             echo "Failure: Found $total_vulnerabilities vulnerabilities."
             echo "status=false" >> $GITHUB_ENV
+          fi
 
   build_project:
     runs-on: self-hosted
