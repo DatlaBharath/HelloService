@@ -51,7 +51,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Install Maven (if not already installed)
-        run: |
+        run: | 
           sudo apt update
           sudo apt install -y maven
 
@@ -122,8 +122,8 @@ jobs:
               app: helloservice
               ports:
               - port: 5000
-                  targetPort: 5000
-                  nodePort: 30007
+                targetPort: 5000
+                nodePort: 30007
           " > service.yaml
          
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
