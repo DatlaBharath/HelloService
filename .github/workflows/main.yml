@@ -51,7 +51,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Install Maven (if not already installed)
-        run: | 
+        run: |
           sudo apt update
           sudo apt install -y maven
 
