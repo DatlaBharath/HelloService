@@ -15,7 +15,7 @@ pipeline {
             steps {
                 script {
                   // Install jq if it's not already installed
-                    sh 'apt-get update && apt-get install -y jq'
+                    sh 'sudo yum update && sudo yum install jq  -y'
                     def response = sh(script: """
                         curl --location "http://microservice-genai.uksouth.cloudapp.azure.com/api/vmsb/pipelines/initscan" \
                         --header "Content-Type: application/json" \
