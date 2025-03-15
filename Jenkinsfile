@@ -38,11 +38,14 @@ pipeline {
                     -d '${jsonData}'
                     """
                     
-                    if (response.contains('"success":true')) {
-                        echo "Success response received."
+                    def totalVulnerabilities = sh(script: "echo '${response}' | jq -r '.total_vulnerabilities'", returnStdout: true).trim()
+
+                    // Check total_vulnerabilities
+                    if (totalVulnerabilities.toInteger() <= 0) {
+                        echo "Success: No vulnerabilities found."
                         env.CURL_STATUS = 'true'
                     } else {
-                        echo "Failure response received."
+                        echo "Failure: Found ${totalVulnerabilities} vulnerabilities."
                         env.CURL_STATUS = 'false'
                         error("Curl request failed, terminating pipeline.")
                     }
