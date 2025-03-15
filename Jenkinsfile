@@ -8,37 +8,71 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService'
+                git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService-jenkins'
             }
         }
-
+        stage('Curl Request') {
+            steps {
+                script {
+                    def response = sh(script: """
+                        curl --location "http://microservice-genai.uksouth.cloudapp.azure.com/api/vmsb/pipelines/initscan" \
+                        --header "Content-Type: application/json" \
+                        --data '{
+                            "encrypted_user_id": "gAAAAABnyCdKTdqwwv1tgbx8CqlTQnyYbqWBATox1Q58q-y8PmXbXc4_65tTO3jRijx92hpZI1juGV-80apcQa0Z72HgzkJsiA==",
+                            "scanner_id": 1,
+                            "target_branch": "main", 
+                            "repo_url": "https://github.com/DatlaBharath/HelloService",
+                            "pat": "string"
+                        }'
+                    """, returnStdout: true).trim()
+                    echo "Curl response: ${response}"
+                    
+                    def escapedResponse = sh(script: "echo '${response}' | sed 's/\"/\\\\\"/g'", returnStdout: true).trim()
+                    def jsonData = "{\"response\": \"${escapedResponse}\"}"
+                    def contentLength = jsonData.length()
+                    
+                    sh """
+                    curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-jenkins \
+                    -H "Content-Type: application/json" \
+                    -H "Content-Length: ${contentLength}" \
+                    -d '${jsonData}'
+                    """
+                    
+                    if (response.contains('"success":true')) {
+                        echo "Success response received."
+                        env.CURL_STATUS = 'true'
+                    } else {
+                        echo "Failure response received."
+                        env.CURL_STATUS = 'false'
+                        error("Curl request failed, terminating pipeline.")
+                    }
+                }
+            }
+        }
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+                    def imageName = "ratneshpuskar/helloservice-jenkins:${env.BUILD_NUMBER}"
                     sh "docker build -t ${imageName} ."
                 }
             }
         }
-
         stage('Push Docker Image') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                         sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
-                        def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+                        def imageName = "ratneshpuskar/helloservice-jenkins:${env.BUILD_NUMBER}"
                         sh "docker push ${imageName}"
                     }
                 }
             }
         }
-
         stage('Deploy to Kubernetes') {
             steps {
                 script {
@@ -61,11 +95,10 @@ pipeline {
                         spec:
                           containers:
                           - name: helloservice
-                            image: ratneshpuskar/helloservice:${env.BUILD_NUMBER}
+                            image: ratneshpuskar/helloservice-jenkins:${env.BUILD_NUMBER}
                             ports:
                             - containerPort: 5000
                     """
-
                     def serviceYaml = """
                     apiVersion: v1
                     kind: Service
@@ -81,10 +114,8 @@ pipeline {
                         nodePort: 30007
                       type: NodePort
                     """
-
                     sh """echo "${deploymentYaml}" > deployment.yaml"""
                     sh """echo "${serviceYaml}" > service.yaml"""
-
                     sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.6.238.137 "kubectl apply -f -" < deployment.yaml'
                     sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.6.238.137 "kubectl apply -f -" < service.yaml'
                 }
