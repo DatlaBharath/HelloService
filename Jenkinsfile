@@ -38,21 +38,25 @@ pipeline {
                     -d '${jsonData}'
                     """
                     
-               def jsonSlurper = new JsonSlurper()
-              def parsedJson = jsonSlurper.parseText(response)
-              
-              // Get the total vulnerabilities count
-              def total_vulnerabilities = parsedJson.total_vulnerabilites ?: 0
-              
-              // Check vulnerability count and set environment variable accordingly
-              if (total_vulnerabilities <= 0) {
-                  echo "Success: No vulnerabilities found."
-                  env.CURL_STATUS = 'true'
-              } else {
-                  echo "Failure: Found ${total_vulnerabilities} vulnerabilities."
-                  env.CURL_STATUS = 'false'
-                  error("Vulnerabilities found, terminating pipeline.")
-              }
+                  def total_vulnerabilities = sh(script: "echo '${response}' | jq -r '.total_vulnerabilites'", returnStdout: true).trim()
+
+// Convert string to integer for comparison
+                try {
+    total_vulnerabilities = total_vulnerabilities.toInteger()
+} catch (Exception e) {
+    echo "Warning: Could not parse total_vulnerabilities as integer: ${total_vulnerabilities}"
+    total_vulnerabilities = -1
+}
+
+// Check vulnerability count and set environment variable accordingly
+if (total_vulnerabilities <= 0) {
+    echo "Success: No vulnerabilities found."
+    env.CURL_STATUS = 'true'
+} else {
+    echo "Failure: Found ${total_vulnerabilities} vulnerabilities."
+    env.CURL_STATUS = 'false'
+    error("Vulnerabilities found, terminating pipeline.")
+}
                 }
             }
         }
