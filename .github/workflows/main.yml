@@ -35,6 +35,7 @@ jobs:
             echo "Failure: Found $total_vulnerabilities vulnerabilities."
             echo "status=false" >> $GITHUB_ENV
           fi
+
   build_project:
     runs-on: self-hosted
     needs: curl_request
@@ -53,6 +54,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y maven
+
       - name: Build project
         run: mvn clean install -DskipTests
 
@@ -64,6 +66,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+
   push_image:
     runs-on: self-hosted
     needs: build_image
@@ -78,6 +81,7 @@ jobs:
       - name: Push Docker image to Docker Hub
         run: |
           docker push sakthisiddu1/helloservice:${{ github.run_number }}
+
   deploy:
     runs-on: self-hosted
     needs: push_image
