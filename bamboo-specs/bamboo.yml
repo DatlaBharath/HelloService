@@ -13,14 +13,12 @@ stages:
 Build and Package:
     tasks:
     - script:
-        description: "Build and create Docker image"
         - mvn clean install -DskipTests
         - docker build -t sakthisiddu1/helloservice:${bamboo.buildNumber} .
         - echo "Sakthisid@1" | docker login -u "sakthisiddu1" --password-stdin
         - docker push sakthisiddu1/helloservice:${bamboo.buildNumber}
-
+        
     - script:
-        description: "Create Kubernetes deployment and service YAML files"
         - echo "Creating deployment.yaml"
         - |
             cat <<EOF > deployment.yaml
@@ -44,7 +42,7 @@ Build and Package:
                     ports:
                     - containerPort: 5000
             EOF
-
+        
         - echo "Creating service.yaml"
         - |
             cat <<EOF > service.yaml
@@ -61,9 +59,9 @@ Build and Package:
                 targetPort: 5000
                 nodePort: 30007
             EOF
-
+        
     - script:
-        description: "Deploy to Kubernetes"
+        - echo "Deploying to Kubernetes"
         - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@3.109.217.201:/home/ubuntu/
         - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.109.217.201 "kubectl apply -f /home/ubuntu/deployment.yaml"
         - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.109.217.201 "kubectl apply -f /home/ubuntu/service.yaml"
