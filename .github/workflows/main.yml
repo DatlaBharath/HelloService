@@ -9,7 +9,7 @@ jobs:
   curl_request:
     runs-on: self-hosted
     outputs:
-       status: ${{ steps.vulnerability-check.outputs.status }}
+       status: ${{ steps.curl_response.outputs.status }}
     steps:
       - name: vulnerability-check
         id: curl_response
