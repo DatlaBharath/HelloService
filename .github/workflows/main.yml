@@ -27,7 +27,7 @@ jobs:
         run: mvn clean install -DskipTests
 
   build_image:
-    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3
+    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
     needs: build_project
     steps:
       - name: Build Docker image
@@ -35,7 +35,7 @@ jobs:
           docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
   push_image:
-    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3
+    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
     needs: build_image
     steps:
       - name: Log in to Docker Hub
@@ -91,5 +91,5 @@ jobs:
               nodePort: 30007
           " > service.yaml
 
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@52.66.116.45 "kubectl apply -f -" < deployment.yaml
-          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@52.66.116.45 "kubectl apply -f -" < service.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.232.34.25 "kubectl apply -f -" < deployment.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.232.34.25 "kubectl apply -f -" < service.yaml
