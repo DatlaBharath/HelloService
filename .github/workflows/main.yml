@@ -8,6 +8,8 @@ on:
 jobs:
   curl_request:
     runs-on: self-hosted
+    outputs:
+       status: ${{ steps.vulnerability-check.outputs.status }}
     steps:
       - name: Execute CURL request and capture response
         id: curl_response
@@ -30,9 +32,10 @@ jobs:
           total_vulnerabilities=0
           if [[ $total_vulnerabilities -le 0 ]]; then
             echo "Success: No vulnerabilities found."
+             echo "status=true" >> $GITHUB_OUTPUT
           else
             echo "Failure: Found $total_vulnerabilities vulnerabilities."
-            echo "status=false" >> $GITHUB_ENV
+            echo "status=false" >> $GITHUB_OUTPUT
           fi
 
   build_project:
