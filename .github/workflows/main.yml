@@ -8,7 +8,6 @@ on:
 jobs:
   build_project:
     runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -28,7 +27,7 @@ jobs:
         run: mvn clean install -DskipTests
 
   build_image:
-    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3
+    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
     needs: build_project
     steps:
       - name: Build Docker image
@@ -36,7 +35,7 @@ jobs:
           docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
   push_image:
-    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3
+    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
     needs: build_image
     steps:
       - name: Log in to Docker Hub
@@ -50,7 +49,7 @@ jobs:
           docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
   deploy:
-    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3
+    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
     needs: push_image
     steps:
       - name: Create deployment YAML and deploy
