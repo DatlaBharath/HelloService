@@ -23,7 +23,7 @@ jobs:
                           }')
           escaped_response=$(echo "$response" | sed 's/"/\\"/g')
           echo "Curl response: $response"
-          curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response?filename='curl-response-github.txt' \
+          curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response?filename=curl-response-github.txt \
                -H "Content-Type: application/json" \
                -d "{\"response\": \"$escaped_response\"}"
           
