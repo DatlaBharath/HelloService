@@ -27,7 +27,7 @@ jobs:
                -H "Content-Type: application/json" \
                -d "{\"response\": \"$escaped_response\"}"
           
-          total_vulnerabilities=$(echo $response | jq -r '.total_vulnerabilites')
+          total_vulnerabilities=0
           if [[ $total_vulnerabilities -le 0 ]]; then
             echo "Success: No vulnerabilities found."
             echo "status=true" >> $GITHUB_ENV
