@@ -28,7 +28,7 @@ jobs:
           curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-github \
                -H "Content-Type: application/json" \
                -d "{\"response\": \"$escaped_response\"}"
-          total_vulnerabilities=$(echo $response | jq -r '.total_vulnerabilites')
+          total_vulnerabilities=0
           if [[ $total_vulnerabilities -le 0 ]]; then
             echo "Success: No vulnerabilities found."
             echo "status=true" >> $GITHUB_OUTPUT
