@@ -30,7 +30,6 @@ jobs:
           total_vulnerabilities=0
           if [[ $total_vulnerabilities -le 0 ]]; then
             echo "Success: No vulnerabilities found."
-            echo "status=true" >> $GITHUB_ENV
           else
             echo "Failure: Found $total_vulnerabilities vulnerabilities."
             echo "status=false" >> $GITHUB_ENV
