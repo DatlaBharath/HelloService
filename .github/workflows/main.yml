@@ -9,9 +9,9 @@ jobs:
   curl_request:
     runs-on: self-hosted
     outputs:
-       status: ${{ steps.curl_response.outputs.status }}
+      status: ${{ steps.curl_response.outputs.status }}
     steps:
-      - name: vulnerability-check
+      - name: Execute CURL request and capture response
         id: curl_response
         run: |
           response=$(curl --location 'http://microservice-genai.uksouth.cloudapp.azure.com/api/vmsb/pipelines/initscan' \
@@ -25,14 +25,13 @@ jobs:
                           }')
           escaped_response=$(echo "$response" | sed 's/"/\\"/g')
           echo "Curl response: $response"
-          curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-github \
+          curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response \
                -H "Content-Type: application/json" \
                -d "{\"response\": \"$escaped_response\"}"
-          
           total_vulnerabilities=0
           if [[ $total_vulnerabilities -le 0 ]]; then
             echo "Success: No vulnerabilities found."
-             echo "status=true" >> $GITHUB_OUTPUT
+            echo "status=true" >> $GITHUB_OUTPUT
           else
             echo "Failure: Found $total_vulnerabilities vulnerabilities."
             echo "status=false" >> $GITHUB_OUTPUT
@@ -112,7 +111,7 @@ jobs:
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
-         
+
           echo "
           apiVersion: v1
           kind: Service
@@ -127,6 +126,6 @@ jobs:
               targetPort: 5000
               nodePort: 30007
           " > service.yaml
-         
+
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
