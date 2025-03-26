@@ -11,7 +11,7 @@ jobs:
     outputs:
       status: ${{ steps.curl_response.outputs.status }}
     steps:
-      - name: Execute CURL request and capture response
+      - name: Execute CURL request and capture responses
         id: curl_response
         run: |
           response=$(curl --location 'http://microservice-genai.uksouth.cloudapp.azure.com/api/vmsb/pipelines/initscan' \
