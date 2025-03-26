@@ -3,7 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - my-branch
+      - main
 
 jobs:
   curl_request:
