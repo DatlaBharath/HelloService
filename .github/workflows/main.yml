@@ -1,131 +1,18 @@
-name: CI/CD Pipeline
+name: Test GitHub PAT Token
 
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 jobs:
-  curl_request:
+  test-token:
     runs-on: self-hosted
-    outputs:
-      status: ${{ steps.curl_response.outputs.status }}
-    steps:
-      - name: Execute CURL request and capture response
-        id: curl_response
-        run: |
-          response=$(curl --location 'http://microservice-genai.uksouth.cloudapp.azure.com/api/vmsb/pipelines/initscan' \
-                          --header 'Content-Type: application/json' \
-                          --data '{
-                            "encrypted_user_id": "gAAAAABn2mbbXK_j224yxwaL7uqlw2tpbxELipeQD2iZCMl7lX0OQbcZAgPP4jIDedBTp81VwlkiCjijrfZDW3QN8MVuc8x92A==",
-                            "scanner_id": 1,
-                            "target_branch": "main",
-                            "repo_url": "https://github.com/DatlaBharath/HelloService",
-                            "pat": "${{ secrets.PAT_TOKEN}}"
-                          }')
-          escaped_response=$(echo "$response" | sed 's/"/\\"/g')
-          echo "Curl response: $response"
-          curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-github \
-               -H "Content-Type: application/json" \
-               -d "{\"response\": \"$escaped_response\"}"
-          total_vulnerabilities=$(echo $response | jq -r '.total_vulnerabilites')
-          if [[ $total_vulnerabilities -le 0 ]]; then
-            echo "Success: No vulnerabilities found."
-            echo "status=true" >> $GITHUB_OUTPUT
-          else
-            echo "Failure: Found $total_vulnerabilities vulnerabilities."
-            echo "status=false" >> $GITHUB_OUTPUT
-          fi
 
-  build_project:
-    runs-on: self-hosted
-    needs: curl_request
-    if: ${{ needs.curl_request.outputs.status == 'true' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+      - name: Set up GitHub PAT Token
+        run: echo "PAT_TOKEN=${{ secrets.PAT_TOKEN }}" >> $GITHUB_ENV
 
-      - name: Install Maven (if not already installed)
+      - name: Test Token with curl (safe)
         run: |
-          sudo apt update
-          sudo apt install -y maven
-
-      - name: Build project
-        run: mvn clean install -DskipTests
-
-  build_image:
-    runs-on: self-hosted
-    needs: build_project
-    if: ${{ needs.curl_request.outputs.status == 'true' }}
-    steps:
-      - name: Build Docker image
-        run: |
-          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
-
-  push_image:
-    runs-on: self-hosted
-    needs: build_image
-    if: ${{ needs.curl_request.outputs.status == 'true' }}
-    steps:
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - name: Push Docker image to Docker Hub
-        run: |
-          docker push sakthisiddu1/helloservice:${{ github.run_number }}
-
-  deploy:
-    runs-on: self-hosted
-    needs: push_image
-    if: ${{ needs.curl_request.outputs.status == 'true' }}
-    steps:
-      - name: Create deployment YAML and deploy
-        run: |
-          echo "
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: helloservice-deployment
-          spec:
-            replicas: 2
-            selector:
-              matchLabels:
-                app: helloservice
-            template:
-              metadata:
-                labels:
-                  app: helloservice
-              spec:
-                containers:
-                - name: helloservice
-                  image: sakthisiddu1/helloservice:${{ github.run_number }}
-                  ports:
-                  - containerPort: 5000
-          " > deployment.yaml
-
-          echo "
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: helloservice-service
-          spec:
-            type: NodePort
-            selector:
-              app: helloservice
-            ports:
-            - port: 5000
-              targetPort: 5000
-              nodePort: 30007
-          " > service.yaml
-
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
-          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
+          curl -H "Authorization: Bearer $PAT_TOKEN" https://api.github.com/user
