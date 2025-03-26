@@ -49,7 +49,7 @@ public class HelloServiceApplication {
                     .antMatchers("/hello").authenticated()
                     .anyRequest().permitAll()
                 .and()
-                .csrf().disable();
+                .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
         }
     }
 }
