@@ -18,14 +18,18 @@ class HelloServiceApplicationTests {
         if (isValidInput(input)) {
             // Proceed with the test
         } else {
-            logger.error("Invalid input: {}", input);
+            logger.error("Invalid input detected.");
             throw new IllegalArgumentException("Invalid input");
         }
     }
 
     private String getInputFromUser() {
         // Simulate dynamic user input for testing purposes
-        return System.getProperty("userInput", "defaultInput");
+        String userInput = System.getProperty("userInput");
+        if (userInput == null || userInput.isEmpty()) {
+            throw new IllegalArgumentException("User input is required");
+        }
+        return userInput;
     }
 
     private boolean isValidInput(String input) {
@@ -36,6 +40,6 @@ class HelloServiceApplicationTests {
     private boolean isSafeInput(String input) {
         // Additional sanitization to prevent injection attacks
         String sanitizedInput = Encode.forJava(input);
-        return sanitizedInput.equals(input);
+        return sanitizedInput.equals(input) && input.equals(Encode.forHtml(input));
     }
 }
