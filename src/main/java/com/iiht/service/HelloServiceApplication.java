@@ -1,4 +1,3 @@
-```java
 package com.iiht.service;
 
 import org.springframework.boot.SpringApplication;
@@ -17,6 +16,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 
 @SpringBootApplication
 @EnableDiscoveryClient
@@ -32,7 +35,20 @@ public class HelloServiceApplication {
 
         @GetMapping("/hello")
         public String sayHello(@RequestParam @NotBlank @Pattern(regexp = "^[a-zA-Z0-9]*$") String name) {
-            return "Hello, " + name;
+            try {
+                return "Hello, " + sanitizeInput(name);
+            } catch (Exception e) {
+                throw new RuntimeException("An error occurred while processing your request.");
+            }
+        }
+
+        private String sanitizeInput(String input) {
+            return input.replaceAll("[^a-zA-Z0-9]", "");
+        }
+
+        @ExceptionHandler(RuntimeException.class)
+        public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred. Please try again later.");
         }
     }
 
@@ -50,8 +66,12 @@ public class HelloServiceApplication {
                     .antMatchers("/hello").authenticated()
                     .anyRequest().permitAll()
                 .and()
-                .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
+                .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyTrue());
+        }
+
+        @Override
+        public void configure(WebSecurity web) throws Exception {
+            web.ignoring().antMatchers("/public/**");
         }
     }
 }
-```

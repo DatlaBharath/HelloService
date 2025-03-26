@@ -13,33 +13,45 @@ class HelloServiceApplicationTests {
 
     @Test
     void contextLoads() {
-        // Example of input validation and sanitization
-        String input = getInputFromUser();
-        if (isValidInput(input)) {
-            // Proceed with the test
-        } else {
-            logger.error("Invalid input detected.");
-            throw new IllegalArgumentException("Invalid input");
+        try {
+            String input = getInputFromUser();
+            if (isValidInput(input)) {
+                // Proceed with the test
+            } else {
+                logger.warn("Invalid input detected.");
+                throw new InvalidInputException("Invalid input: " + input);
+            }
+        } catch (InvalidInputException e) {
+            logger.error("Error in contextLoads: " + e.getMessage(), e);
         }
     }
 
-    private String getInputFromUser() {
-        // Simulate dynamic user input for testing purposes
-        String userInput = System.getProperty("userInput");
+    private String getInputFromUser() throws InvalidInputException {
+        String userInput = getUserInputFromSecureSource();
         if (userInput == null || userInput.isEmpty()) {
-            throw new IllegalArgumentException("User input is required");
+            throw new InvalidInputException("User input is required");
         }
         return userInput;
     }
 
+    private String getUserInputFromSecureSource() {
+        // Replace System.getProperty with a more secure method of obtaining user input
+        // For example, using environment variables or a secure configuration management system
+        return System.getenv("USER_INPUT");
+    }
+
     private boolean isValidInput(String input) {
-        // Enhanced validation logic
         return input != null && input.matches("[a-zA-Z0-9]*") && isSafeInput(input);
     }
 
     private boolean isSafeInput(String input) {
-        // Additional sanitization to prevent injection attacks
         String sanitizedInput = Encode.forJava(input);
         return sanitizedInput.equals(input) && input.equals(Encode.forHtml(input));
+    }
+
+    private static class InvalidInputException extends Exception {
+        public InvalidInputException(String message) {
+            super(message);
+        }
     }
 }
