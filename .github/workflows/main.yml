@@ -28,7 +28,6 @@ jobs:
           curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-github \
                -H "Content-Type: application/json" \
                -d "{\"response\": \"$escaped_response\"}"
-          
           total_vulnerabilities=$(echo $response | jq -r '.total_vulnerabilites')
           if [[ $total_vulnerabilities -le 0 ]]; then
             echo "Success: No vulnerabilities found."
@@ -112,7 +111,7 @@ jobs:
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
-         
+
           echo "
           apiVersion: v1
           kind: Service
@@ -127,6 +126,6 @@ jobs:
               targetPort: 5000
               nodePort: 30007
           " > service.yaml
-         
+
           ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.203.9.97 "kubectl apply -f -" < deployment.yaml
           ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.9.97 "kubectl apply -f -" < service.yaml
