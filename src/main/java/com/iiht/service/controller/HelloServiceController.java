@@ -50,22 +50,29 @@ public class HelloServiceController {
 	}
 
 	@GetMapping("/greet")
-	public String greet() 
-	{
+	public String greet() {
 		return "Good Morning, Welcome To Demo Project";
 	}
 	
 	@GetMapping("/add/{a}/{b}")
-	public String add(@PathVariable int a,@PathVariable int b) {
-		return (a+b) +"";
+	public String add(@PathVariable int a, @PathVariable int b) {
+		try {
+			return (a + b) + "";
+		} catch (Exception e) {
+			return "Error: " + e.getMessage();
+		}
 	}
 	
 	@GetMapping("/fact/{a}")
-	public String add(@RequestHeader HttpHeaders header,@PathVariable int a) {
-		int fact = 1;
-		for(int i=1;i<=a;i++) {
-			fact *=i;
+	public String fact(@RequestHeader HttpHeaders header, @PathVariable int a) {
+		try {
+			int fact = 1;
+			for (int i = 1; i <= a; i++) {
+				fact *= i;
+			}
+			return fact + "" + header.toString();
+		} catch (Exception e) {
+			return "Error: " + e.getMessage();
 		}
-		return fact+""+header.toString();
 	}
 }
