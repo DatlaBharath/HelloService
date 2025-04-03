@@ -66,7 +66,7 @@ jobs:
     steps:
       - name: Build Docker image
         run: |
-          docker build -t undefined/helloservice:${{ github.run_number }} .
+          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
 
   push_image:
     runs-on: self-hosted
@@ -81,7 +81,7 @@ jobs:
 
       - name: Push Docker image to Docker Hub
         run: |
-          docker push undefined/helloservice:${{ github.run_number }}
+          docker push sakthisiddu1/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: self-hosted
@@ -107,7 +107,7 @@ jobs:
               spec:
                 containers:
                 - name: helloservice
-                  image: undefined/helloservice:${{ github.run_number }}
+                  image: sakthisiddu1/helloservice:${{ github.run_number }}
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
