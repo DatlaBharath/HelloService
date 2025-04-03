@@ -9,8 +9,14 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.validation.annotation.Validated;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Max;
+import org.springframework.web.util.HtmlUtils;
 
 @RestController
+@Validated
 public class HelloServiceController {
     
     @GetMapping
@@ -53,20 +59,20 @@ public class HelloServiceController {
     }
 
     @GetMapping("/greet")
-    public String greet() 
-    {
-        return "Good Morning, Welcome To Demo Project";
+    public String greet(@RequestParam String name) {
+        String escapedName = HtmlUtils.htmlEscape(name);
+        return "Good Morning, Welcome To Demo Project, " + escapedName;
     }
     
     @Secured("ROLE_USER")
-    @GetMapping("/add/{a}/{b}")
-    public ResponseEntity<String> add(@PathVariable int a, @PathVariable int b) {
+    @GetMapping("/add")
+    public ResponseEntity<String> add(@RequestParam @Min(0) int a, @RequestParam @Min(0) int b) {
         return new ResponseEntity<>((a + b) + "", HttpStatus.OK);
     }
     
     @Secured("ROLE_USER")
     @GetMapping("/fact/{a}")
-    public ResponseEntity<String> fact(@RequestHeader HttpHeaders header, @PathVariable int a) {
+    public ResponseEntity<String> fact(@RequestHeader HttpHeaders header, @PathVariable @Min(0) @Max(12) int a) {
         int fact = 1;
         for (int i = 1; i <= a; i++) {
             fact *= i;
