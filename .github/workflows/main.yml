@@ -7,7 +7,7 @@ on:
 
 jobs:
   build_project:
-    runs-on: self-hosted
+    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -27,15 +27,15 @@ jobs:
         run: mvn clean install -DskipTests
 
   build_image:
-    runs-on: self-hosted
+    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
     needs: build_project
     steps:
       - name: Build Docker image
         run: |
-          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+          docker build -t yourdockerhubusername/helloservice:${{ github.run_number }} .
 
   push_image:
-    runs-on: self-hosted
+    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
     needs: build_image
     steps:
       - name: Log in to Docker Hub
@@ -46,10 +46,10 @@ jobs:
 
       - name: Push Docker image to Docker Hub
         run: |
-          docker push sakthisiddu1/helloservice:${{ github.run_number }}
+          docker push yourdockerhubusername/helloservice:${{ github.run_number }}
 
   deploy:
-    runs-on: self-hosted
+    runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
     needs: push_image
     steps:
       - name: Create deployment YAML and deploy
@@ -71,7 +71,7 @@ jobs:
               spec:
                 containers:
                 - name: helloservice
-                  image: sakthisiddu1/helloservice:${{ github.run_number }}
+                  image: yourdockerhubusername/helloservice:${{ github.run_number }}
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
@@ -91,5 +91,5 @@ jobs:
               nodePort: 30007
           " > service.yaml
 
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@13.233.64.237 "kubectl apply -f -" < deployment.yaml
-          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.64.237 "kubectl apply -f -" < service.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@15.206.173.231 "kubectl apply -f -" < deployment.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@15.206.173.231 "kubectl apply -f -" < service.yaml
