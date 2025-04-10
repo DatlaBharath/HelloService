@@ -2,7 +2,7 @@
 version: 2
 plan:
     project-key: MVN1
-    name: Maven Build and Docker Deploy Plan1
+    name: Maven Build and Docker Deploy Plan6
     key: ABC1
 
 stages:
