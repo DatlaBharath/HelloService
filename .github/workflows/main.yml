@@ -21,7 +21,7 @@ jobs:
                             "scanner_id": 1,
                             "target_branch": "main",
                             "repo_url": "https://github.com/DatlaBharath/HelloService",
-                            "pat": "${{ secrets.PAT_TOKEN }}"
+                            "pat": "${{ secrets.PAT_TOKEN}}"
                           }')
           escaped_response=$(echo "$response" | sed 's/"/\\"/g')
           echo "Curl response: $response"
