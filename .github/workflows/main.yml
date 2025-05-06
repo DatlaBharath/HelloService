@@ -31,7 +31,7 @@ jobs:
           
           total_vulnerabilities=$(echo $response | jq -r '.total_vulnerabilites')
           high=$(echo $response | jq -r '.high')
-          medium=$(echo $response | jq -r '.medium')
+          medium=1
           if [[ $high -le 0 && $medium -le 0 ]]; then
             echo "Success: No high and medium found."
             echo "status=true" >> $GITHUB_OUTPUT
