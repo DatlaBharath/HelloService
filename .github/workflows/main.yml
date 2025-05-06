@@ -30,7 +30,7 @@ jobs:
                -d "{\"response\": \"$escaped_response\"}"
           
           total_vulnerabilities=$(echo $response | jq -r '.total_vulnerabilites')
-          high=1
+          high=$(echo $response | jq -r '.high')
           medium=$(echo $response | jq -r '.medium')
           if [[ $high -le 0 && $medium -le 0 ]]; then
             echo "Success: No high and medium found."
