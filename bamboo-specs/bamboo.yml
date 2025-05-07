@@ -48,7 +48,6 @@ Vulnerability Scan:
                     echo "Success: No high and medium vulnerabilities found."
                 else
                     echo "Failure: Found $TOTAL_VULNERABILITIES vulnerabilities. $HIGH high vulnerabilities. $MEDIUM medium vulnerabilities"
-                    echo "Setting build result to FAILED"
                     exit 1
                 fi
             else
@@ -56,7 +55,6 @@ Vulnerability Scan:
                     echo "Success status found in response. Proceeding with build."
                 else
                     echo "Warning: Could not parse total_vulnerabilities and no success status found."
-                    echo "Continuing with build as a precaution, but please check the response."
                 fi
             fi
 Build and Package:
@@ -111,6 +109,6 @@ Build and Package:
         
     - script:
         - echo "Deploying to Kubernetes"
-        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@3.111.144.106:/home/ubuntu/
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.111.144.106 "kubectl apply -f /home/ubuntu/deployment.yaml"
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.111.144.106 "kubectl apply -f /home/ubuntu/service.yaml"
+        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@3.111.147.124:/home/ubuntu/
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.111.147.124 "kubectl apply -f /home/ubuntu/deployment.yaml"
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.111.147.124 "kubectl apply -f /home/ubuntu/service.yaml"
