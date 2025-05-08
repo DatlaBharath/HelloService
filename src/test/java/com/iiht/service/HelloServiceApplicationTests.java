@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.HtmlUtils;
 
 @SpringBootTest
 class HelloServiceApplicationTests {
@@ -23,16 +24,17 @@ class HelloServiceApplicationTests {
 class HelloServiceController {
 
     private static final String DEFAULT_NAME = "World";
+    private static final int MAX_LENGTH = 50;
 
     @GetMapping("/hello")
     public String sayHello(@RequestParam(name = "name", required = false) String name) {
         if (!StringUtils.hasText(name)) {
             name = DEFAULT_NAME;
         }
-        if (!name.matches("[a-zA-Z]+")) {
+        if (name.length() > MAX_LENGTH || !name.matches("^[a-zA-Z]+$")) {
             throw new IllegalArgumentException("Invalid input");
         }
-        return "Hello, " + name + "!";
+        return "Hello, " + HtmlUtils.htmlEscape(name) + "!";
     }
 }
 

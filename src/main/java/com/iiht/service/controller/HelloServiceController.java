@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.InputMismatchException;
 
 @RestController
 public class HelloServiceController {
@@ -57,22 +58,29 @@ public class HelloServiceController {
 	@GetMapping("/add/{a}/{b}")
 	public String add(@PathVariable int a, @PathVariable int b) {
 		try {
-			return (a + b) + "";
+			return Integer.toString(a + b);
+		} catch (InputMismatchException e) {
+			return "Error: Please ensure numbers are integers.";
 		} catch (Exception e) {
-			return "Error: " + e.getMessage();
+			return "Error: An unexpected error occurred.";
 		}
 	}
 	
 	@GetMapping("/fact/{a}")
 	public String fact(@RequestHeader HttpHeaders header, @PathVariable int a) {
+		if (a < 0) {
+			return "Error: Factorial of negative numbers is undefined.";
+		}
 		try {
 			int fact = 1;
 			for (int i = 1; i <= a; i++) {
 				fact *= i;
 			}
-			return fact + "" + header.toString();
+			return fact + " " + header.toString();
+		} catch (IllegalArgumentException e) {
+			return "Error: Please provide a valid positive integer.";
 		} catch (Exception e) {
-			return "Error: " + e.getMessage();
+			return "Error: An unexpected error occurred.";
 		}
 	}
 }
