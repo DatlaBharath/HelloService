@@ -1,7 +1,7 @@
 version: 2
 plan:
     project-key: AUM
-    name: Maven Builds and Docker Deploy Plan
+    name: Maven Build and Docker Deploy Plan
     key: MVM
 
 stages:
@@ -11,6 +11,7 @@ stages:
     - Build and Deploy:
         jobs:
         - Build and Package
+
 Vulnerability Scan:
     tasks:
     - script:
@@ -59,6 +60,7 @@ Vulnerability Scan:
                     echo "Continuing with build as a precaution, but please check the response."
                 fi
             fi
+
 Build and Package:
     tasks:
     - script:
