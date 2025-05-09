@@ -2,7 +2,7 @@
 version: 2
 plan:
     project-key: AUM
-    name: Maven Build and Docker Deploy Plan
+    name: Maven Build and Docker Deploy Plan 2
     key: MVM
 
 stages:
@@ -17,7 +17,7 @@ Build and Package:
         - docker build -t ${bamboo.dockerUser}/helloservice:${bamboo.buildNumber} .
         - echo ${bamboo.dockerPass} | docker login -u ${bamboo.dockerUser} --password-stdin
         - docker push ${bamboo.dockerUser}/helloservice:${bamboo.buildNumber}
-
+        
     - script:
         - echo "Creating deployment.yaml"
         - |
@@ -42,8 +42,7 @@ Build and Package:
                     ports:
                     - containerPort: 5000
             EOF
-
-    - script:
+        
         - echo "Creating service.yaml"
         - |
             cat <<EOF > service.yaml
@@ -60,8 +59,9 @@ Build and Package:
                 targetPort: 5000
                 nodePort: 30007
             EOF
-
+        
     - script:
+        - echo "Deploying to Kubernetes"
         - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@13.127.21.218:/home/ubuntu/
         - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.127.21.218 "kubectl apply -f /home/ubuntu/deployment.yaml"
         - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.127.21.218 "kubectl apply -f /home/ubuntu/service.yaml"
