@@ -2,7 +2,7 @@
 version: 2
 plan:
     project-key: AUM
-    name: Maven and it also Build and Docker Deploy Plan
+    name: Maven ad it also Build and Docker Deploy Plan
     key: MVM
 
 stages:
