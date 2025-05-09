@@ -2,7 +2,7 @@
 version: 2
 plan:
     project-key: AUT
-    name: Maven Build and Docker Deploy Plan 2
+    name: Maven Build and Docker Deploy Plan 23
     key: MVN
 
 stages:
@@ -44,7 +44,7 @@ Build and Package:
             EOF
 
     - script:
-        - echo "Creating service.yaml"
+        - echo "Creating service.yaml ...."
         - |
             cat <<EOF > service.yaml
             apiVersion: v1
