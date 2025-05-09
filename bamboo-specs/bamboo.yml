@@ -94,7 +94,7 @@ Build and Package:
                     - containerPort: 5000
             EOF
         
-        - echo "Creating service.yaml"
+        - echo "Creating service.yaml..."
         - |
             cat <<EOF > service.yaml
             apiVersion: v1
