@@ -19,7 +19,7 @@ Build and Package:
         - docker push ${bamboo.dockerUser}/helloservice:${bamboo.buildNumber}
         
     - script:
-        - echo "Creating an deployment.yaml"
+        - echo "Creating also an deployment.yaml"
         - |
             cat <<EOF > deployment.yaml
             apiVersion: apps/v1
