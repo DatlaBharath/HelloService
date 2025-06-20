@@ -3,20 +3,20 @@ pipeline {
     tools {
         maven 'Maven'
     }
-
+    
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
-
+        
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
-
+        
         stage('Build Docker Image') {
             steps {
                 script {
@@ -25,7 +25,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Push Docker Image') {
             steps {
                 script {
@@ -37,7 +37,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Deploy to Kubernetes') {
             steps {
                 script {
@@ -62,7 +62,7 @@ spec:
       - name: helloservice
         image: ratneshpuskar/helloservice:${env.BUILD_NUMBER}
         ports:
-        - containerPort: 80
+        - containerPort: 5000
 """
 
                     def serviceYaml = """
@@ -75,8 +75,8 @@ spec:
     app: helloservice
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 80
+    port: 5000
+    targetPort: 5000
     nodePort: 30007
   type: NodePort
 """
@@ -90,7 +90,7 @@ spec:
             }
         }
     }
-
+    
     post {
         success {
             echo 'Deployment was successful'
