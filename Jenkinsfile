@@ -16,25 +16,26 @@ pipeline {
             steps {
                 script {
                     def response = sh(script: """
-                        curl --location "http://microservice-genai.uksouth.cloudapp.azure.com/api/vmsb/pipelines/initscan" \\
-                        --header "Content-Type: application/json" \\
+                        curl --location "http://microservice-genai.uksouth.cloudapp.azure.com/api/vmsb/pipelines/initscan" \
+                        --header "Content-Type: application/json" \
                         --data '{
                             "encrypted_user_id": "gAAAAABn0rtiUIre85Q28N4qZj7Ks30nAI8gukwzyeAengetWJ4CbZzfyQbgpP6wFXrXm0BROOwL4ps-uefe8pmcPDeergw7SA==",
                             "scanner_id": 1,
                             "target_branch": "main",
                             "repo_url": "https://github.com/DatlaBharath/HelloService",
-                            "pat": "${PAT}"
+                            "pat": "${env.PAT}"
                         }'
                     """, returnStdout: true).trim()
 
                     echo "Curl response: ${response}"
 
-                    def escapedResponse = sh(script: "echo '${response}' | sed 's/\"/\\\\\\\"/g'", returnStdout: true).trim()
-
+                    def escapedResponse = sh(script: "echo '${response}' | sed 's/\"/\\\\\"/g'", returnStdout: true).trim()
+                    def jsonData = "{\"response\": \"${escapedResponse}\"}"
+                    
                     sh """
-                    curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-jenkins?sessionId=\\${encodeURIComponent(sessionId)} \\
-                    -H "Content-Type: application/json" \\
-                    -d "{\\\"response\\\": \\\"${escapedResponse}\\\"}"
+                    curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-jenkins?sessionId=${encodeURIComponent(sessionId)} \
+                    -H "Content-Type: application/json" \
+                    -d '${jsonData}'
                     """
                 }
             }
@@ -49,8 +50,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def repoName = 'helloservice'
-                    def imageName = "ratneshpuskar/${repoName}:${env.BUILD_NUMBER}"
+                    def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
                     sh "docker build -t ${imageName} ."
                 }
             }
@@ -61,8 +61,7 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                         sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
-                        def repoName = 'helloservice'
-                        def imageName = "ratneshpuskar/${repoName}:${env.BUILD_NUMBER}"
+                        def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
                         sh "docker push ${imageName}"
                     }
                 }
