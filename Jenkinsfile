@@ -1,48 +1,103 @@
 pipeline {
-    agent any 
-    environment {
-        DOCKER_REGISTRY = "your-docker-registry"
-        KUBECONFIG_CRED_ID = 'your-kubeconfig-credential-id'
-        DOCKER_CRED_ID = 'your-docker-credential-id'
-        MAVEN_PATH = '/path/to/mvn'
+    agent any
+
+    tools {
+        maven 'Maven'
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    def scmVars = checkout scm
-                }
+                git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
-        
+
         stage('Build') {
             steps {
-                sh "${MAVEN_PATH}/mvn clean package"
+                sh 'mvn clean package -DskipTests'
             }
         }
-        
-        stage('Docker Build & Push') {
+
+        stage('Build Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: DOCKER_CRED_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin "${DOCKER_REGISTRY}"
-                        docker build -t ${DOCKER_REGISTRY}/your-image-name:${env.BUILD_NUMBER} .
-                        docker push ${DOCKER_REGISTRY}/your-image-name:${env.BUILD_NUMBER}
-                    """
+                script {
+                    def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+                    sh "docker build -t ${imageName} ."
                 }
             }
         }
-        
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
+                        def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+                        sh "docker push ${imageName}"
+                    }
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([file(credentialsId: KUBECONFIG_CRED_ID, variable: 'KUBECONFIG')]) {
-                    sh """
-                        kubectl --kubeconfig=\${KUBECONFIG} set image deployment/your-deployment your-container=${DOCKER_REGISTRY}/your-image-name:${env.BUILD_NUMBER}
-                        kubectl --kubeconfig=\${KUBECONFIG} rollout status deployment/your-deployment
-                    """
+                script {
+                    def deploymentYaml = """
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helloservice-deployment
+  labels:
+    app: helloservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helloservice
+  template:
+    metadata:
+      labels:
+        app: helloservice
+    spec:
+      containers:
+      - name: helloservice
+        image: ratneshpuskar/helloservice:${env.BUILD_NUMBER}
+        ports:
+        - containerPort: 5000
+"""
+
+                    def serviceYaml = """
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloservice-service
+spec:
+  selector:
+    app: helloservice
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+    nodePort: 30007
+  type: NodePort
+"""
+
+                    sh """echo "$deploymentYaml" > deployment.yaml"""
+                    sh """echo "$serviceYaml" > service.yaml"""
+
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.43.207 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.43.207 "kubectl apply -f -" < service.yaml'
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment was successful'
+        }
+        failure {
+            echo 'Deployment failed'
         }
     }
 }
