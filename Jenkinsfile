@@ -20,8 +20,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def repoName = 'helloservice'
-                    def imageName = "ratneshpuskar/${repoName}:${env.BUILD_NUMBER}"
+                    def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
                     sh "docker build -t ${imageName} ."
                 }
             }
@@ -31,9 +30,8 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
-                        def repoName = 'helloservice'
-                        def imageName = "ratneshpuskar/${repoName}:${env.BUILD_NUMBER}"
+                        sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
+                        def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
                         sh "docker push ${imageName}"
                     }
                 }
