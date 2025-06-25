@@ -5,68 +5,93 @@ pipeline {
         maven 'Maven'
     }
 
+    environment {
+        PAT = credentials('pat-key')
+    }
+
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'changes', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
-        
-        stage('Vulnerability Scan') {
+        stage('Curl Request') {
             steps {
                 script {
-                    // Step 1: Perform curl request to scan
                     def response = sh(script: """
-                        curl --location \"http://microservice-genai.uksouth.cloudapp.azure.com/api/vmsb/pipelines/initscan\" \
-                        --header \"Content-Type: application/json\" \
-                        --data '{ 
-                            \"encrypted_user_id\": \"gAAAAABn0rtiUIre85Q28N4qZj7Ks30nAI8gukwzyeAengetWJ4CbZzfyQbgpP6wFXrXm0BROOwL4ps-uefe8pmcPDeergw7SA==\",
-                            \"scanner_id\": 1,
-                            \"target_branch\": \"changes\", 
-                            \"repo_url\": \"https://github.com/DatlaBharath/HelloService\",
-                            \"pat\": \"${PAT}\"
+                        curl --location "http://microservice-genai.uksouth.cloudapp.azure.com/api/vmsb/pipelines/initscan" \
+                        --header "Content-Type: application/json" \
+                        --data '{
+                            "encrypted_user_id": "gAAAAABn0rtiUIre85Q28N4qZj7Ks30nAI8gukwzyeAengetWJ4CbZzfyQbgpP6wFXrXm0BROOwL4ps-uefe8pmcPDeergw7SA==",
+                            "scanner_id": 1,
+                            "target_branch": "changes", 
+                            "repo_url": "https://github.com/DatlaBharath/HelloService",
+                            "pat": "${PAT}"
                         }'
                     """, returnStdout: true).trim()
-                    
                     echo "Curl response: ${response}"
-
-                    // Escape the response
+                    
                     def escapedResponse = sh(script: "echo '${response}' | sed 's/\"/\\\\\"/g'", returnStdout: true).trim()
-
-                    // Step 2: Send the escaped response to save it
-                    def sessionId = "your_session_id" // adjust this logic if necessary
+                    
+                    def jsonData = "{\"response\": \"${escapedResponse}\"}"
+                    
+                    def contentLength = jsonData.length()
+                    
                     sh """
-                        curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-jenkins?sessionId=\${encodeURIComponent('${sessionId}')} \
-                        -H "Content-Type: application/json" \
-                        -d "{\\"response\\": \\"${escapedResponse}\\"}"
+                    curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-jenkins?sessionId=bincyEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3 \
+                    -H "Content-Type: application/json" \
+                    -H "Content-Length: ${contentLength}" \
+                    -d '${jsonData}'
                     """
+                    
+                    def total_vulnerabilities = sh(script: "echo '${response}' | jq -r '.total_vulnerabilities'", returnStdout: true).trim()
+                    def high = sh(script: "echo '${response}' | jq -r '.high'", returnStdout: true).trim()
+                    def medium = sh(script: "echo '${response}' | jq -r '.medium'", returnStdout: true).trim()
+
+                    try {
+                        total_vulnerabilities = total_vulnerabilities.toInteger()
+                        high = high.toInteger()
+                        medium = medium.toInteger()
+                    } catch (Exception e) {
+                        echo "Warning: Could not parse total_vulnerabilities as integer: ${total_vulnerabilities}"
+                        total_vulnerabilities = -1
+                    }
+
+                    if (high + medium <= 0) {
+                        echo "Success: No high and medium vulnerabilities found."
+                        env.CURL_STATUS = 'true'
+                    } else {
+                        echo "Failure: Found ${total_vulnerabilities} vulnerabilities."
+                        env.CURL_STATUS = 'false'
+                        error("Vulnerabilities found, terminating pipeline.")
+                    }
                 }
             }
         }
-
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
-
-        stage('Build and Push Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 script {
                     def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
-
-                    // Build Docker image
                     sh "docker build -t ${imageName} ."
-
-                    // Push Docker image
+                }
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                         sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
+                        def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
                         sh "docker push ${imageName}"
                     }
                 }
             }
         }
-
         stage('Deploy to Kubernetes') {
             steps {
                 script {
@@ -93,7 +118,7 @@ pipeline {
                             ports:
                             - containerPort: 5000
                     """
-                    
+
                     def serviceYaml = """
                     apiVersion: v1
                     kind: Service
@@ -113,8 +138,8 @@ pipeline {
                     sh """echo "${deploymentYaml}" > deployment.yaml"""
                     sh """echo "${serviceYaml}" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.111.171.100 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.111.171.100 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.6.238.137 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.6.238.137 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
