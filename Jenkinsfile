@@ -5,14 +5,18 @@ pipeline {
         maven 'Maven'
     }
 
+    environment {
+        PAT = credentials('pat-key')
+    }
+
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'changes', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
-        
-        stage('Curl Request and Vulnerability Check') {
+
+        stage('Check Vulnerabilities') {
             steps {
                 script {
                     def response = sh(script: """
@@ -26,23 +30,24 @@ pipeline {
                             "pat": "${PAT}"
                         }'
                     """, returnStdout: true).trim()
-                    
+
                     echo "Curl response: ${response}"
 
-                    def escapedResponse = sh(script: "echo '${response}' | sed 's/\"/\\\\\"/g'", returnStdout: true).trim()
-                    def jsonData = "{\"response\": \"${escapedResponse}\"}"
+                    def escapedResponse = sh(script: "echo \"${response}\" | sed 's/\"/\\\\\"/g'", returnStdout: true).trim()
+
+                    def jsonData = "{ \"response\": \"${escapedResponse}\" }"
                     def contentLength = jsonData.length()
 
                     sh """
-                    curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-jenkins?sessionId=${encodeURIComponent(sessionId)} \
+                    curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-jenkins?sessionId= \
                     -H "Content-Type: application/json" \
                     -H "Content-Length: ${contentLength}" \
                     -d '${jsonData}'
                     """
-
-                    def total_vulnerabilities = sh(script: "echo '${response}' | jq -r '.total_vulnerabilities'", returnStdout: true).trim()
-                    def high = sh(script: "echo '${response}' | jq -r '.high'", returnStdout: true).trim()
-                    def medium = sh(script: "echo '${response}' | jq -r '.medium'", returnStdout: true).trim()
+                    
+                    def total_vulnerabilities = sh(script: "echo \"${response}\" | jq -r '.total_vulnerabilites'", returnStdout: true).trim()
+                    def high = sh(script: "echo \"${response}\" | jq -r '.high'", returnStdout: true).trim()
+                    def medium = sh(script: "echo \"${response}\" | jq -r '.medium'", returnStdout: true).trim()
 
                     try {
                         total_vulnerabilities = total_vulnerabilities.toInteger()
@@ -55,8 +60,10 @@ pipeline {
 
                     if (high + medium <= 0) {
                         echo "Success: No high and medium vulnerabilities found."
+                        env.CURL_STATUS = 'true'
                     } else {
                         echo "Failure: Found ${total_vulnerabilities} vulnerabilities."
+                        env.CURL_STATUS = 'false'
                         error("Vulnerabilities found, terminating pipeline.")
                     }
                 }
@@ -82,7 +89,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
+                        sh 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
                         def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
                         sh "docker push ${imageName}"
                     }
