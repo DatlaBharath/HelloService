@@ -1,30 +1,40 @@
 pipeline {
     agent any
+    tools {
+        maven 'Maven'
+    }
+    
     stages {
-        stage('Git Clone') {
+        stage('Checkout') {
             steps {
-                git 'https://github.com/DatlaBharath/HelloService'
+                git branch: 'changes', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
         
         stage('Build') {
             steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
                 script {
-                    def mvnHome = tool 'Maven'
-                    sh "${mvnHome}/bin/mvn clean package"
+                    def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+                    sh "docker build -t ${imageName} ."
                 }
             }
         }
         
-        stage('Docker Build and Push') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh """
-                            docker build -t ratneshpuskar/hello-service:${env.BUILD_NUMBER} .
-                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                            docker push ratneshpuskar/hello-service:${env.BUILD_NUMBER}
-                        """
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', 
+                                                     passwordVariable: 'DOCKER_PASSWORD', 
+                                                     usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                        def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
+                        sh "docker push ${imageName}"
                     }
                 }
             }
@@ -33,18 +43,61 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh """
-                        kubectl set image deployment/hello-service hello-service=ratneshpuskar/hello-service:${env.BUILD_NUMBER} --record
-                        kubectl rollout status deployment/hello-service
-                    """
+                    def deploymentYaml = """
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helloservice-deployment
+  labels:
+    app: helloservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helloservice
+  template:
+    metadata:
+      labels:
+        app: helloservice
+    spec:
+      containers:
+      - name: helloservice
+        image: ratneshpuskar/helloservice:${env.BUILD_NUMBER}
+        ports:
+        - containerPort: 5000
+"""
+                    def serviceYaml = """
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloservice-service
+spec:
+  selector:
+    app: helloservice
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+    nodePort: 30007
+  type: NodePort
+"""
+
+                    sh """echo "$deploymentYaml" > deployment.yaml"""
+                    sh """echo "$serviceYaml" > service.yaml"""
+
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.40.182 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.40.182 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
-        
-        stage('Post-Deployment') {
-            steps {
-                echo 'Deployment Completed!'
-            }
+    }
+    
+    post {
+        success {
+            echo 'Deployment was successful'
+        }
+        failure {
+            echo 'Deployment failed'
         }
     }
 }
