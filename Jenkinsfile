@@ -1,73 +1,49 @@
 pipeline {
     agent any
-
-    environment {
-        DOCKER_IMAGE = 'myapp-image'
-        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
-        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
-        SSH_CREDENTIALS_ID = 'ssh-credentials'
-    }
-
     stages {
-        stage('Checkout SCM') {
+        stage('Git Clone') {
             steps {
-                checkout scm
+                git 'https://github.com/DatlaBharath/HelloService'
             }
         }
-
-        stage('Build with Maven') {
+        
+        stage('Build') {
             steps {
                 script {
-                    sh 'mvn clean install'
+                    def mvnHome = tool 'Maven'
+                    sh "${mvnHome}/bin/mvn clean package"
                 }
             }
         }
-
-        stage('Build Docker Image') {
+        
+        stage('Docker Build and Push') {
             steps {
                 script {
-                    docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
-                }
-            }
-        }
-
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(
-                        credentialsId: DOCKER_CREDENTIALS_ID,
-                        usernameVariable: 'USERNAME',
-                        passwordVariable: 'PASSWORD'
-                    )]) {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh """
-                            echo "${PASSWORD}" | docker login -u "${USERNAME}" --password-stdin
-                            docker push "${DOCKER_IMAGE}:${env.BUILD_ID}"
+                            docker build -t ratneshpuskar/hello-service:${env.BUILD_NUMBER} .
+                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                            docker push ratneshpuskar/hello-service:${env.BUILD_NUMBER}
                         """
                     }
                 }
             }
         }
-
+        
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    withCredentials([file(credentialsId: KUBECONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG_FILE')]) {
-                        withEnv(["KUBECONFIG=${KUBECONFIG_FILE}"]) {
-                            sh """
-                                kubectl set image deployment/myapp myapp="${DOCKER_IMAGE}:${env.BUILD_ID}"
-                                kubectl rollout status deployment/myapp
-                            """
-                        }
-                    }
+                    sh """
+                        kubectl set image deployment/hello-service hello-service=ratneshpuskar/hello-service:${env.BUILD_NUMBER} --record
+                        kubectl rollout status deployment/hello-service
+                    """
                 }
             }
         }
-    }
-
-    post {
-        always {
-            script {
-                cleanWs()
+        
+        stage('Post-Deployment') {
+            steps {
+                echo 'Deployment Completed!'
             }
         }
     }
