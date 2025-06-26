@@ -3,7 +3,6 @@ pipeline {
     tools {
         maven 'Maven'
     }
-
     stages {
         stage('Checkout') {
             steps {
@@ -64,6 +63,7 @@ spec:
         ports:
         - containerPort: 5000
 """
+
                     def serviceYaml = """
 apiVersion: v1
 kind: Service
