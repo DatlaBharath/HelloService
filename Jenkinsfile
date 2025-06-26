@@ -29,6 +29,7 @@ pipeline {
                             "pat": "${PAT}"
                         }'
                     """, returnStdout: true).trim()
+                    
                     echo "Curl response: ${response}"
                     
                     def escapedResponse = sh(script: "echo '${response}' | sed 's/\"/\\\\\"/g'", returnStdout: true).trim()
