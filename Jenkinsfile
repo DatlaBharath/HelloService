@@ -1,38 +1,48 @@
 pipeline {
     agent any
-    tools {
-        maven 'Maven'
+
+    environment {
+        DOCKER_IMAGE = 'myapp-image'
+        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
+        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
+        SSH_CREDENTIALS_ID = 'ssh-credentials'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                git branch: 'changes', url: 'https://github.com/DatlaBharath/HelloService'
+                checkout scm
             }
         }
 
-        stage('Build') {
+        stage('Build with Maven') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                script {
+                    sh 'mvn clean install'
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
-                    sh "docker build -t ${imageName} ."
+                    docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
-                        def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
-                        sh "docker push ${imageName}"
+                    withCredentials([usernamePassword(
+                        credentialsId: DOCKER_CREDENTIALS_ID,
+                        usernameVariable: 'USERNAME',
+                        passwordVariable: 'PASSWORD'
+                    )]) {
+                        sh """
+                            echo "${PASSWORD}" | docker login -u "${USERNAME}" --password-stdin
+                            docker push "${DOCKER_IMAGE}:${env.BUILD_ID}"
+                        """
                     }
                 }
             }
@@ -41,62 +51,24 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    def deploymentYaml = """
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: helloservice-deployment
-  labels:
-    app: helloservice
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: helloservice
-  template:
-    metadata:
-      labels:
-        app: helloservice
-    spec:
-      containers:
-      - name: helloservice
-        image: ratneshpuskar/helloservice:${env.BUILD_NUMBER}
-        ports:
-        - containerPort: 5000
-"""
-
-                    def serviceYaml = """
-apiVersion: v1
-kind: Service
-metadata:
-  name: helloservice-service
-spec:
-  selector:
-    app: helloservice
-  ports:
-  - protocol: TCP
-    port: 5000
-    targetPort: 5000
-    nodePort: 30007
-  type: NodePort
-"""
-
-                    sh """echo "$deploymentYaml" > deployment.yaml"""
-                    sh """echo "$serviceYaml" > service.yaml"""
-
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.40.182 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.40.182 "kubectl apply -f -" < service.yaml'
+                    withCredentials([file(credentialsId: KUBECONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG_FILE')]) {
+                        withEnv(["KUBECONFIG=${KUBECONFIG_FILE}"]) {
+                            sh """
+                                kubectl set image deployment/myapp myapp="${DOCKER_IMAGE}:${env.BUILD_ID}"
+                                kubectl rollout status deployment/myapp
+                            """
+                        }
+                    }
                 }
             }
         }
     }
 
     post {
-        success {
-            echo 'Deployment was successful'
-        }
-        failure {
-            echo 'Deployment failed'
+        always {
+            script {
+                cleanWs()
+            }
         }
     }
 }
