@@ -32,7 +32,9 @@ pipeline {
                     echo "Curl response: ${response}"
                     
                     def escapedResponse = sh(script: "echo '${response}' | sed 's/\"/\\\\\"/g'", returnStdout: true).trim()
+                    
                     def jsonData = "{\"response\": \"${escapedResponse}\"}"
+                    
                     def contentLength = jsonData.length()
                     
                     sh """
@@ -116,6 +118,7 @@ pipeline {
                             ports:
                             - containerPort: 5000
                     """
+                    
                     def serviceYaml = """
                     apiVersion: v1
                     kind: Service
@@ -131,8 +134,10 @@ pipeline {
                         nodePort: 30007
                       type: NodePort
                     """
+                    
                     sh """echo "${deploymentYaml}" > deployment.yaml"""
                     sh """echo "${serviceYaml}" > service.yaml"""
+                    
                     sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.40.182 "kubectl apply -f -" < deployment.yaml'
                     sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.40.182 "kubectl apply -f -" < service.yaml'
                 }
