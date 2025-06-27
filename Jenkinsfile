@@ -20,8 +20,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def repoName = 'helloservice'
-                    def imageName = "ratneshpuskar/${repoName}:${env.BUILD_NUMBER}"
+                    def imageName = "ratneshpuskar/helloservice:${env.BUILD_NUMBER}"
                     sh "docker build -t ${imageName} ."
                 }
             }
