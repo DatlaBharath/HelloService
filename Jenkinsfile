@@ -29,14 +29,20 @@ pipeline {
                             "pat": "${PAT}"
                         }'
                     """, returnStdout: true).trim()
+                    
                     echo "Curl response: ${response}"
                     
                     def escapedResponse = sh(script: "echo '${response}' | sed 's/\"/\\\\\"/g'", returnStdout: true).trim()
                     
+                    def jsonData = "{\"response\": \"${escapedResponse}\"}"
+                    
+                    def contentLength = jsonData.length()
+                    
                     sh """
                     curl -X POST http://ec2-13-201-18-57.ap-south-1.compute.amazonaws.com/app/save-curl-response-jenkins?sessionId=bincyEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3 \
                     -H "Content-Type: application/json" \
-                    -d "{\\"response\\": \\"${escapedResponse}\\"}"
+                    -H "Content-Length: ${contentLength}" \
+                    -d '${jsonData}'
                     """
                     
                     def total_vulnerabilities = sh(script: "echo '${response}' | jq -r '.total_vulnerabilites'", returnStdout: true).trim()
@@ -113,6 +119,7 @@ pipeline {
                             ports:
                             - containerPort: 5000
                     """
+                    
                     def serviceYaml = """
                     apiVersion: v1
                     kind: Service
@@ -128,8 +135,10 @@ pipeline {
                         nodePort: 30007
                       type: NodePort
                     """
+                    
                     sh """echo "${deploymentYaml}" > deployment.yaml"""
                     sh """echo "${serviceYaml}" > service.yaml"""
+                    
                     sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@15.207.51.205 "kubectl apply -f -" < deployment.yaml'
                     sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@15.207.51.205 "kubectl apply -f -" < service.yaml'
                 }
