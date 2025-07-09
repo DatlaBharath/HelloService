@@ -45,21 +45,21 @@ pipeline {
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: HelloService-deployment
+  name: helloservice-deployment
   labels:
-    app: HelloService
+    app: helloservice
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: HelloService
+      app: helloservice
   template:
     metadata:
       labels:
-        app: HelloService
+        app: helloservice
     spec:
       containers:
-      - name: HelloService
+      - name: helloservice
         image: sakthisiddu1/helloservice:${env.BUILD_NUMBER}
         ports:
         - containerPort: 5000
@@ -69,10 +69,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: HelloService-service
+  name: helloservice-service
 spec:
   selector:
-    app: HelloService
+    app: helloservice
   ports:
   - protocol: TCP
     port: 5000
