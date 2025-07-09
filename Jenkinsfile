@@ -81,11 +81,14 @@ spec:
   type: NodePort
 """
 
-                    sh """echo "$deploymentYaml" > deployment.yaml"""
-                    sh """echo "$serviceYaml" > service.yaml"""
+                    sh 'echo "$deploymentYaml" > deployment.yaml'
+                    sh 'echo "$serviceYaml" > service.yaml'
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@15.207.16.188 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@15.207.16.188 "kubectl apply -f -" < service.yaml'
+                    sh 'scp -i /var/test.pem -o StrictHostKeyChecking=no deployment.yaml ubuntu@3.6.91.214:/home/ubuntu/'
+                    sh 'scp -i /var/test.pem -o StrictHostKeyChecking=no service.yaml ubuntu@3.6.91.214:/home/ubuntu/'
+
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.6.91.214 kubectl apply -f /home/ubuntu/deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.6.91.214 kubectl apply -f /home/ubuntu/service.yaml'
                 }
             }
         }
