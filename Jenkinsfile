@@ -45,21 +45,21 @@ pipeline {
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: helloservice-deployment
+  name: HelloService-deployment
   labels:
-    app: helloservice
+    app: HelloService
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: helloservice
+      app: HelloService
   template:
     metadata:
       labels:
-        app: helloservice
+        app: HelloService
     spec:
       containers:
-      - name: helloservice
+      - name: HelloService
         image: sakthisiddu1/helloservice:${env.BUILD_NUMBER}
         ports:
         - containerPort: 5000
@@ -69,10 +69,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: helloservice-service
+  name: HelloService-service
 spec:
   selector:
-    app: helloservice
+    app: HelloService
   ports:
   - protocol: TCP
     port: 5000
@@ -84,8 +84,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.244.131 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.244.131 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.126.74.211 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.126.74.211 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
