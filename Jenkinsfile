@@ -1,38 +1,38 @@
 pipeline {
     agent any
-
-    environment {
-        GIT_REPO = "https://github.com/DatlaBharath/HelloService"
-        GIT_BRANCH = "main"
-        DOCKER_CREDENTIAL_ID = "dockerhub_credentials"
-        DOCKER_USERNAME = "sakthisiddu1"
-        KUBERNETES_IP = "13.233.85.204"
-        APP_PORT = "5000"
+    tools {
+        maven 'Maven'
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
-                git url: "${GIT_REPO}", branch: "${GIT_BRANCH}"
+                git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
 
-        stage('Build with Maven') {
+        stage('Build') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    def dockerImage = "${DOCKER_USERNAME}/${env.JOB_NAME}:${env.BUILD_NUMBER}"
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIAL_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh """
-                            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker build -t $dockerImage .
-                            docker push $dockerImage
-                        """
+                    def imageName = "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
+                    sh "docker build -t ${imageName} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
+                        def imageName = "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
+                        sh "docker push ${imageName}"
                     }
                 }
             }
@@ -41,13 +41,62 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    def dockerImage = "${DOCKER_USERNAME}/${env.JOB_NAME}:${env.BUILD_NUMBER}"
-                    sh """
-                        kubectl set image deployment/your-deployment-name your-container-name=$dockerImage --record
-                        kubectl expose deployment your-deployment-name --type=NodePort --port=${APP_PORT}
-                    """
+                    def deploymentYaml = """
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helloservice-deployment
+  labels:
+    app: helloservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helloservice
+  template:
+    metadata:
+      labels:
+        app: helloservice
+    spec:
+      containers:
+      - name: helloservice
+        image: sakthisiddu1/helloservice:${env.BUILD_NUMBER}
+        ports:
+        - containerPort: 5000
+"""
+
+                    def serviceYaml = """
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloservice-service
+spec:
+  selector:
+    app: helloservice
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+    nodePort: 30007
+  type: NodePort
+"""
+
+                    sh """echo "$deploymentYaml" > deployment.yaml"""
+                    sh """echo "$serviceYaml" > service.yaml"""
+
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.85.204 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.85.204 "kubectl apply -f -" < service.yaml'
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment was successful'
+        }
+        failure {
+            echo 'Deployment failed'
         }
     }
 }
