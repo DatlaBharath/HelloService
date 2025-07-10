@@ -41,6 +41,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
+                    def imageName = "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
                     def deploymentYaml = """
 apiVersion: apps/v1
 kind: Deployment
@@ -60,10 +61,11 @@ spec:
     spec:
       containers:
       - name: helloservice
-        image: sakthisiddu1/helloservice:${env.BUILD_NUMBER}
+        image: ${imageName}
         ports:
         - containerPort: 5000
 """
+
                     def serviceYaml = """
 apiVersion: v1
 kind: Service
@@ -79,8 +81,9 @@ spec:
     nodePort: 30007
   type: NodePort
 """
-                    sh """echo "$deploymentYaml" > deployment.yaml"""
-                    sh """echo "$serviceYaml" > service.yaml"""
+
+                    sh "echo \"$deploymentYaml\" > deployment.yaml"
+                    sh "echo \"$serviceYaml\" > service.yaml"
 
                     sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.110.181.85 "kubectl apply -f -" < deployment.yaml'
                     sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.110.181.85 "kubectl apply -f -" < service.yaml'
