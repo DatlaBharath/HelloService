@@ -64,6 +64,7 @@ spec:
         ports:
         - containerPort: 5000
 """
+
                     def serviceYaml = """
 apiVersion: v1
 kind: Service
@@ -79,6 +80,7 @@ spec:
     nodePort: 30007
   type: NodePort
 """
+
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
