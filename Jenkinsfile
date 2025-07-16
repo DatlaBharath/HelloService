@@ -93,7 +93,7 @@ spec:
     
     post {
         success {
-            echo 'Deployment was successfull'
+            echo 'Deployment was successfully'
         }
         failure {
             echo 'Deployment failed'
