@@ -43,7 +43,7 @@ pipeline:
                       spec:
                         script: |
                           cd helloservice
-                          /usr/bin/mvn clean install -DskipTests
+                          mvn clean install -DskipTests
               - step:
                   name: Build Docker Image
                   identifier: Build_Image
