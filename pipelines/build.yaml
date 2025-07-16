@@ -75,8 +75,9 @@ pipeline:
                       type: Inline
                       spec:
                         script: |
+                          echo "$DOCKERHUB_PASSWORD"
                           echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                          docker push sakthisiddu1/helloservice:${HARNESS_BUILD_NUMBER}
+                          docker push sakthisiddu1/helloservice:latest
               - step:
                   name: Deploy to Kubernetes via SSH
                   identifier: Deploy_K8s
@@ -107,7 +108,7 @@ pipeline:
                               spec:
                                 containers:
                                 - name: helloservice
-                                  image: sakthisiddu1/helloservice:${HARNESS_BUILD_NUMBER}
+                                  image: sakthisiddu1/helloservice:latest
                                   ports:
                                   - containerPort: 5000
                           EOF
