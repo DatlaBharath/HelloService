@@ -25,22 +25,8 @@ pipeline:
                       spec:
                         script: |
                           echo "Cloning repo..."
-                          git clone https://github.com/<your-username>/helloservice.git
+                          git clone https://github.com/DatlaBharath/helloservice.git
                           cd helloservice
-
-              - step:
-                  name: Set up Java & Maven
-                  identifier: Setup_Java_Maven
-                  type: ShellScript
-                  spec:
-                    shell: Bash
-                    onDelegate: true
-                    source:
-                      type: Inline
-                      spec:
-                        script: |
-                          sudo apt update
-                          sudo apt install -y maven
 
               - step:
                   name: Build Project
@@ -143,5 +129,5 @@ pipeline:
 
                           echo "Deploying to Kubernetes via SSH..."
 
-                          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@3.109.121.145 "kubectl apply -f -" < deployment.yaml
-                          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@3.109.121.145 "kubectl apply -f -" < service.yaml
+                          ssh -o StrictHostKeyChecking=no -i /home/ec2-user/.ssh/test.pem ubuntu@52.66.206.177 "kubectl apply -f -" < deployment.yaml
+                          ssh -o StrictHostKeyChecking=no -i /home/ec2-user/.ssh/test.pem ubuntu@52.66.206.177 "kubectl apply -f -" < service.yaml
