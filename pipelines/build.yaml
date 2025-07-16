@@ -56,7 +56,7 @@ pipeline:
                       spec:
                         script: |
                           cd helloservice
-                          docker build -t sakthisiddu1/helloservice:${HARNESS_BUILD_NUMBER} .
+                          docker build -t sakthisiddu1/helloservice:latest .
               - step:
                   name: Push Docker Image
                   identifier: Push_Image
