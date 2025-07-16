@@ -66,15 +66,16 @@ pipeline:
                     onDelegate: true
                     environmentVariables:
                       - name: DOCKERHUB_USERNAME
-                        type: Secret
+                        type: String
                         value: <+secrets.getValue("dockerhub-username")>
                       - name: DOCKERHUB_PASSWORD
-                        type: Secret
+                        type: String
                         value: <+secrets.getValue("dockerhub-password")>
                     source:
                       type: Inline
                       spec:
                         script: |
+                          echo "$DOCKERHUB_USERNAME"
                           echo "$DOCKERHUB_PASSWORD"
                           echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
                           docker push sakthisiddu1/helloservice:latest
