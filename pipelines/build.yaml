@@ -4,27 +4,144 @@ pipeline:
   projectIdentifier: default_project
   orgIdentifier: default
   tags: {}
+
   stages:
     - stage:
-        name: a
-        identifier: a
-        description: ""
+        name: Build and Deploy
+        identifier: Build_And_Deploy
         type: Custom
         spec:
           execution:
             steps:
               - step:
+                  name: Checkout Code
+                  identifier: Checkout_Code
                   type: ShellScript
-                  name: ShellScript_1
-                  identifier: ShellScript_1
                   spec:
                     shell: Bash
-                    executionTarget: {}
+                    onDelegate: true
                     source:
                       type: Inline
                       spec:
-                        script: echo "hello world2"
-                    environmentVariables: []
-                    outputVariables: []
-                  timeout: 10m
-        tags: {}
+                        script: |
+                          echo "Cloning repo..."
+                          git clone https://github.com/<your-username>/helloservice.git
+                          cd helloservice
+
+              - step:
+                  name: Set up Java & Maven
+                  identifier: Setup_Java_Maven
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          sudo apt update
+                          sudo apt install -y maven
+
+              - step:
+                  name: Build Project
+                  identifier: Build_Project
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          cd helloservice
+                          mvn clean install -DskipTests
+
+              - step:
+                  name: Build Docker Image
+                  identifier: Build_Image
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          cd helloservice
+                          docker build -t sakthisiddu1/helloservice:${HARNESS_BUILD_NUMBER} .
+
+              - step:
+                  name: Push Docker Image
+                  identifier: Push_Image
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    environmentVariables:
+                      - name: DOCKERHUB_USERNAME
+                        type: Secret
+                        value: <+secrets.getValue("dockerhub-username")>
+                      - name: DOCKERHUB_PASSWORD
+                        type: Secret
+                        value: <+secrets.getValue("dockerhub-password")>
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                          docker push sakthisiddu1/helloservice:${HARNESS_BUILD_NUMBER}
+
+              - step:
+                  name: Deploy to Kubernetes via SSH
+                  identifier: Deploy_K8s
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          echo "Creating deployment.yaml and service.yaml..."
+
+                          cat <<EOF > deployment.yaml
+                          apiVersion: apps/v1
+                          kind: Deployment
+                          metadata:
+                            name: helloservice-deployment
+                          spec:
+                            replicas: 2
+                            selector:
+                              matchLabels:
+                                app: helloservice
+                            template:
+                              metadata:
+                                labels:
+                                  app: helloservice
+                              spec:
+                                containers:
+                                - name: helloservice
+                                  image: sakthisiddu1/helloservice:${HARNESS_BUILD_NUMBER}
+                                  ports:
+                                  - containerPort: 5000
+                          EOF
+
+                          cat <<EOF > service.yaml
+                          apiVersion: v1
+                          kind: Service
+                          metadata:
+                            name: helloservice-service
+                          spec:
+                            type: NodePort
+                            selector:
+                              app: helloservice
+                            ports:
+                              - port: 5000
+                                targetPort: 5000
+                                nodePort: 30007
+                          EOF
+
+                          echo "Deploying to Kubernetes via SSH..."
+
+                          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@3.109.121.145 "kubectl apply -f -" < deployment.yaml
+                          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@3.109.121.145 "kubectl apply -f -" < service.yaml
