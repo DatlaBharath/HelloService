@@ -137,5 +137,5 @@ pipeline:
   ci:
     codebase:
       connectorRef: github_pat_connector # <-- USES THE CONNECTOR WE CREATED
-      repoName: YOUR_GITHUB_REPO_NAME_HERE   # <-- e.g., "my-awesome-app"
+      repoName: helloservice   # <-- e.g., "my-awesome-app"
       build: <+input>
