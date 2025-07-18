@@ -78,7 +78,7 @@ pipeline:
                           echo "$DOCKERHUB_USERNAME"
                           echo "$DOCKERHUB_PASSWORD"
                           echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                          docker push sakthisiddu1/helloservice:latest
+                          docker push sakthisiddu1/hellervice:latest
               - step:
                   name: Deploy to Kubernetes via SSH
                   identifier: Deploy_K8s
