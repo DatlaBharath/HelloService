@@ -133,3 +133,9 @@ pipeline:
 
                           ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@15.206.124.178 "kubectl apply -f -" < deployment.yaml
                           ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@15.206.124.178 "kubectl apply -f -" < service.yaml
+  properties:
+  ci:
+    codebase:
+      connectorRef: github_pat_connector # <-- USES THE CONNECTOR WE CREATED
+      repoName: YOUR_GITHUB_REPO_NAME_HERE   # <-- e.g., "my-awesome-app"
+      build: <+input>
