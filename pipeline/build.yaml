@@ -1,0 +1,28 @@
+pipeline:
+  name: build
+  identifier: build
+  projectIdentifier: default_project
+  orgIdentifier: dafault
+  stages:
+    - stage:
+        name: bootstrap_stage
+        identifier: bootstrap_stage
+        type: CI
+        spec:
+          # These platform/runtime blocks are often needed for validation
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          # A minimal execution block with one simple step
+          execution:
+            steps:
+              - step:
+                  name: bootstrap_step
+                  identifier: bootstrap_step
+                  type: Run
+                  spec:
+                    shell: Sh
+                    command: echo "This is a temporary bootstrap step."
