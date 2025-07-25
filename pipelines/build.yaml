@@ -1,1 +1,129 @@
-{"pipeline":{"name":"build","identifier":"build","projectIdentifier":"default_project","orgIdentifier":"default","tags":{},"stages":[{"stage":{"name":"Build and Publish","identifier":"Build_And_Publish","type":"Custom","spec":{"execution":{"steps":[{"step":{"name":"Checkout Code","identifier":"Checkout_Code","type":"ShellScript","spec":{"shell":"Bash","source":{"type":"Inline","spec":{"script":"echo \"Cloning repo...\"\ngit clone --branch main https://github.com/UserName/RepoName.git repo\ncd repo\npwd\nls\n"}}},"timeout":"10m"}},{"step":{"name":"Build Project","identifier":"Build_Project","type":"ShellScript","spec":{"shell":"Bash","onDelegate":true,"source":{"type":"Inline","spec":{"script":"cd repo\nmvn clean install -DskipTests\n"}}}}},{"step":{"name":"Build Docker Image","identifier":"Build_Image","type":"ShellScript","spec":{"shell":"Bash","onDelegate":true,"source":{"type":"Inline","spec":{"script":"cd repo\ndocker build -t sakthisiddu1/reponame:<+env.BUILD_NUMBER> .\n"}}}}},{"step":{"name":"Push Docker Image","identifier":"Push_Image","type":"ShellScript","spec":{"shell":"Bash","onDelegate":true,"environmentVariables":[{"name":"DOCKERHUB_USERNAME","type":"String","value":"<+secrets.getValue(\"dockerhub-username\")>"},{"name":"DOCKERHUB_PASSWORD","type":"String","value":"<+secrets.getValue(\"dockerhub-password\")>"}],"source":{"type":"Inline","spec":{"script":"echo \"$DOCKERHUB_USERNAME\"\necho \"$DOCKERHUB_PASSWORD\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin\ndocker push $DOCKERHUB_USERNAME/reponame:<+env.BUILD_NUMBER>\n"}}}}},{"step":{"name":"Deploy to Kubernetes via SSH","identifier":"Deploy_K8s","type":"ShellScript","spec":{"shell":"Bash","onDelegate":true,"source":{"type":"Inline","spec":{"script":"echo \"Creating deployment.yaml and service.yaml...\"\n\ncat <<EOF > deployment.yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: reponame-deployment\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: reponame\n  template:\n    metadata:\n      labels:\n        app: reponame\n    spec:\n      containers:\n      - name: reponame\n        image: sakthisiddu1/reponame:<+env.BUILD_NUMBER>\n        ports:\n        - containerPort: 5000\nEOF\n\ncat <<EOF > service.yaml\napiVersion: v1\nkind: Service\nmetadata:\n  name: reponame-service\nspec:\n  type: NodePort\n  selector:\n    app: reponame\n  ports:\n    - port: 5000\n      targetPort: 5000\n      nodePort: 30007\nEOF\n\nssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@65.1.64.254 \"kubectl apply -f -\" < deployment.yaml\nssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@65.1.64.254 \"kubectl apply -f -\" < service.yaml\n"}}}}}]}}}}]}}
+pipeline:
+  name: build
+  identifier: build
+  projectIdentifier: default_project
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: Build and Publish
+        identifier: Build_And_Publish
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Checkout Code
+                  identifier: Checkout_Code
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          echo "Cloning repo..."
+                          git clone --branch main https://github.com/UserName/RepoName.git repo
+                          cd repo
+                          pwd
+                          ls
+                  timeout: 10m
+              - step:
+                  name: Build Project
+                  identifier: Build_Project
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          cd repo
+                          mvn clean install -DskipTests
+              - step:
+                  name: Build Docker Image
+                  identifier: Build_Image
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          cd repo
+                          docker build -t sakthisiddu1/reponame:<+env.BUILD_NUMBER> .
+              - step:
+                  name: Push Docker Image
+                  identifier: Push_Image
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    environmentVariables:
+                      - name: DOCKERHUB_USERNAME
+                        type: String
+                        value: <+secrets.getValue("dockerhub-username")>
+                      - name: DOCKERHUB_PASSWORD
+                        type: String
+                        value: <+secrets.getValue("dockerhub-password")>
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          echo "$DOCKERHUB_USERNAME"
+                          echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                          docker push $DOCKERHUB_USERNAME/reponame:<+env.BUILD_NUMBER>
+              - step:
+                  name: Deploy to Kubernetes via SSH
+                  identifier: Deploy_K8s
+                  type: ShellScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          echo "Creating deployment.yaml and service.yaml..."
+
+                          cat <<EOF > deployment.yaml
+                          apiVersion: apps/v1
+                          kind: Deployment
+                          metadata:
+                            name: reponame-deployment
+                          spec:
+                            replicas: 2
+                            selector:
+                              matchLabels:
+                                app: reponame
+                            template:
+                              metadata:
+                                labels:
+                                  app: reponame
+                              spec:
+                                containers:
+                                - name: reponame
+                                  image: sakthisiddu1/reponame:<+env.BUILD_NUMBER>
+                                  ports:
+                                  - containerPort: 5000
+                          EOF
+
+                          cat <<EOF > service.yaml
+                          apiVersion: v1
+                          kind: Service
+                          metadata:
+                            name: reponame-service
+                          spec:
+                            type: NodePort
+                            selector:
+                              app: reponame
+                            ports:
+                              - port: 5000
+                                targetPort: 5000
+                                nodePort: 30007
+                          EOF
+
+                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@65.1.64.254 "kubectl apply -f -" < deployment.yaml
+                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@65.1.64.254 "kubectl apply -f -" < service.yaml
