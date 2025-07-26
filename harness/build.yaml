@@ -1,5 +1,4 @@
-|
-  pipeline:
+pipeline:
           name: build
           identifier: build
           projectIdentifier: default_project
