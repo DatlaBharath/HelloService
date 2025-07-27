@@ -1,9 +1,6 @@
 pipeline:
-  name: build
+  name: BuildAndDeploy
   identifier: build
-  projectIdentifier: default_project
-  orgIdentifier: default
-  tags: {}
   stages:
     - stage:
         name: Build and Deploy
@@ -22,7 +19,15 @@ pipeline:
                       type: Inline
                       spec:
                         script: |
-                          git clone https://github.com/DatlaBharath/helloservice.git
+                          echo "Cloning repo..."
+                          rm -rf helloservice
+                          git clone -b main https://github.com/DatlaBharath/helloservice.git
+                          cd helloservice
+                          pwd
+                          ls
+                    executionTarget: {}
+                    environmentVariables: []
+                    outputVariables: []
                   timeout: 10m
               - step:
                   name: Build Project
@@ -69,8 +74,9 @@ pipeline:
                       spec:
                         script: |
                           echo "$DOCKERHUB_USERNAME"
+                          echo "$DOCKERHUB_PASSWORD"
                           echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                          docker push $DOCKERHUB_USERNAME/helloservice:<+pipeline.sequenceId>
+                          docker push sakthisiddu1/helloservice:<+pipeline.sequenceId>
               - step:
                   name: Deploy to Kubernetes via SSH
                   identifier: Deploy_K8s
@@ -83,6 +89,7 @@ pipeline:
                       spec:
                         script: |
                           echo "Creating deployment.yaml and service.yaml..."
+
                           cat <<EOF > deployment.yaml
                           apiVersion: apps/v1
                           kind: Deployment
@@ -121,7 +128,8 @@ pipeline:
                           EOF
 
                           echo "Deploying to Kubernetes via SSH..."
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@43.205.144.105 "kubectl apply -f -" < deployment.yaml
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@43.205.144.105 "kubectl apply -f -" < service.yaml
+
+                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@3.109.216.222 "kubectl apply -f -" < deployment.yaml
+                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@3.109.216.222 "kubectl apply -f -" < service.yaml
 
                           rm -rf helloservice
