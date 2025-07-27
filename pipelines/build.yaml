@@ -57,7 +57,7 @@ pipeline:
                       spec:
                         script: |
                           cd helloservice
-                          docker build -t sakthisiddu1/$(basename $(git rev-parse --show-toplevel)):<+pipeline.sequenceId> .
+                          docker build -t sakthisiddu1/helloservice:<+pipeline.sequenceId> .
               - step:
                   name: Push Docker Image
                   identifier: Push_Image
@@ -79,7 +79,7 @@ pipeline:
                           echo "$DOCKERHUB_USERNAME"
                           echo "$DOCKERHUB_PASSWORD"
                           echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                          docker push "$DOCKERHUB_USERNAME"/$(basename $(git rev-parse --show-toplevel)):<+pipeline.sequenceId>
+                          docker push $DOCKERHUB_USERNAME/helloservice:<+pipeline.sequenceId>
               - step:
                   name: Deploy to Kubernetes via SSH
                   identifier: Deploy_K8s
