@@ -23,7 +23,6 @@ pipeline:
                       spec:
                         script: |
                           echo "Cloning repo..."
-                          rm -rf helloservice
                           git clone https://github.com/DatlaBharath/helloservice.git
                           cd helloservice
                           pwd
@@ -80,7 +79,7 @@ pipeline:
                           echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
                           docker push $DOCKERHUB_USERNAME/helloservice:<+pipeline.sequenceId>
               - step:
-                  name: Deploy to Kubernetes via SSH
+                  name: Deploy to Kubernetes
                   identifier: Deploy_K8s
                   type: ShellScript
                   spec:
