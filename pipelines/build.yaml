@@ -22,7 +22,7 @@ pipeline:
                       type: Inline
                       spec:
                         script: |
-                          echo "Cloning repo... on helloservice"
+                          echo "Cloning repo..."
                           rm -rf helloservice
                           git clone https://github.com/DatlaBharath/helloservice.git
                           cd helloservice
@@ -92,7 +92,7 @@ pipeline:
                       type: Inline
                       spec:
                         script: |
-                          echo "Creating deployment.yaml and service.yaml..."
+                          echo """Creating deployment.yaml and service.yaml..."""
 
                           cat <<EOF > deployment.yaml
                           apiVersion: apps/v1
@@ -131,7 +131,7 @@ pipeline:
                                 nodePort: 30007
                           EOF
 
-                          echo "Deploying to Kubernetes via SSH..."
+                          echo """Deploying to Kubernetes via SSH..."""
 
                           ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@15.207.223.219 "kubectl apply -f -" < deployment.yaml
                           ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@15.207.223.219 "kubectl apply -f -" < service.yaml
