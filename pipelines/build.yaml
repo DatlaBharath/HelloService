@@ -22,9 +22,9 @@ pipeline:
                       type: Inline
                       spec:
                         script: |
-                          echo "Cloning repo..."
+                          echo "Cloning into the repo..."
                           rm -rf helloservice
-                          git clone 'https://github.com/DatlaBharath/helloservice.git'
+                          git clone https://github.com/DatlaBharath/helloservice.git
                           cd helloservice
                           pwd
                           ls
@@ -133,7 +133,7 @@ pipeline:
 
                           echo "Deploying to Kubernetes via SSH..."
 
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@15.207.223.219 "kubectl apply -f -" < deployment.yaml
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@15.207.223.219 "kubectl apply -f -" < service.yaml
+                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@15.207.223.219 "kubectl apply -f -" < deployment.yaml
+                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@15.207.223.219 "kubectl apply -f -" < service.yaml
 
                           rm -rf helloservice
