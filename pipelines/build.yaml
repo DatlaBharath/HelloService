@@ -93,6 +93,7 @@ pipeline:
                       spec:
                         script: |
                           echo "Creating deployment.yaml and service.yaml..."
+                          echo "test-1"
 
                           cat <<EOF > deployment.yaml
                           apiVersion: apps/v1
