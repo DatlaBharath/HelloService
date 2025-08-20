@@ -21,7 +21,7 @@ pipeline:
                     source:
                       type: Inline
                       spec:
-                        script: | 
+                        script: |
                           echo "Cloning repo..."
                           rm -rf helloservice
                           git clone https://github.com/DatlaBharath/helloservice.git
