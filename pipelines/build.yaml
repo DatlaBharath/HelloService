@@ -23,7 +23,7 @@ pipeline:
                       spec:
                         script: |
                           echo "Cloning repo..."
-                          rm -rf helloservice
+                          rm -rf HelloService
                           git clone https://github.com/DatlaBharath/helloservice.git
                           cd helloservice
                           pwd
