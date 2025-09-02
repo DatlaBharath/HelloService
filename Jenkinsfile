@@ -41,7 +41,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    def deploymentYaml = """\
+                    def deploymentYaml = """
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -65,7 +65,7 @@ spec:
         - containerPort: 5000
 """
 
-                    def serviceYaml = """\
+                    def serviceYaml = """
 apiVersion: v1
 kind: Service
 metadata:
@@ -81,11 +81,11 @@ spec:
   type: NodePort
 """
 
-                    sh "echo \"${deploymentYaml}\" > deployment.yaml"
-                    sh "echo \"${serviceYaml}\" > service.yaml"
+                    sh """echo "${deploymentYaml}" > deployment.yaml"""
+                    sh """echo "${serviceYaml}" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.79.222 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.79.222 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.112.172 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.112.172 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
