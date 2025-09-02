@@ -26,7 +26,8 @@ pipeline:
                           rm -rf helloservice
                           git clone https://github.com/DatlaBharath/helloservice.git
                           cd helloservice
-                          git checkout main
+                          pwd
+                          ls
                     executionTarget: {}
                     environmentVariables: []
                     outputVariables: []
@@ -79,7 +80,7 @@ pipeline:
                           echo "$DOCKERHUB_USERNAME"
                           echo "$DOCKERHUB_PASSWORD"
                           echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                          docker push "$DOCKERHUB_USERNAME"/helloservice:<+pipeline.sequenceId>
+                          docker push $DOCKERHUB_USERNAME/helloservice:<+pipeline.sequenceId>
               - step:
                   name: Deploy to Kubernetes via SSH
                   identifier: Deploy_K8s
