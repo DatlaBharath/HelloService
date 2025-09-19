@@ -3,20 +3,20 @@ pipeline {
     tools {
         maven 'Maven'
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
-        
+
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
-        
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -25,7 +25,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Push Docker Image') {
             steps {
                 script {
@@ -37,7 +37,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
@@ -80,7 +80,7 @@ spec:
     nodePort: 30007
   type: NodePort
 """
-                    
+
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
@@ -90,7 +90,7 @@ spec:
             }
         }
     }
-    
+
     post {
         success {
             echo 'Deployment was successful'
