@@ -17,27 +17,22 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build and Push Docker Image') {
             steps {
                 script {
+                   def awsAccountId = '522814716906'
+                    def region = 'ap-south-1'
+                    def repository = 'helloservice'
                     def imageName = "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
                     sh "docker build -t ${imageName} ."
-                }
-            }
+                     sh "docker tag ${imageName} ${awsAccountId}.dkr.ecr.${region}.amazonaws.com/${repository}:${env.BUILD_NUMBER}"
+sh "aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${awsAccountId}.dkr.ecr.${region}.amazonaws.com"
+sh "docker push ${awsAccountId}.dkr.ecr.${region}.amazonaws.com/${repository}:${env.BUILD_NUMBER}"
         }
+}
+}
 
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
-                        def imageName = "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
-                        sh "docker push ${imageName}"
-                    }
-                }
-            }
-        }
-
+  
         stage('Deploy to Kubernetes') {
             steps {
                 script {
@@ -60,7 +55,7 @@ spec:
     spec:
       containers:
       - name: helloservice
-        image: sakthisiddu1/helloservice:${env.BUILD_NUMBER}
+        image: 522814716906.dkr.ecr.ap-south-1.amazonaws.com/helloservice:${env.BUILD_NUMBER}
         ports:
         - containerPort: 5000
 """
@@ -84,8 +79,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.191.219 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.191.219 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.110.84.26 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.110.84.26 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
