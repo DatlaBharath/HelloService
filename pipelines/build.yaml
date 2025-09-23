@@ -26,7 +26,6 @@ pipeline:
                           rm -rf helloservice
                           git clone https://github.com/DatlaBharath/helloservice.git
                           cd helloservice
-                          git checkout main
                           pwd
                           ls
                     executionTarget: {}
@@ -134,7 +133,7 @@ pipeline:
 
                           echo "Deploying to Kubernetes via SSH..."
 
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.126.66.20 "kubectl apply -f -" < deployment.yaml
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.126.66.20 "kubectl apply -f -" < service.yaml
+                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@65.2.57.199 "kubectl apply -f -" < deployment.yaml
+                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@65.2.57.199 "kubectl apply -f -" < service.yaml
 
                           rm -rf helloservice
