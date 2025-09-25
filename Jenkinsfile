@@ -46,12 +46,13 @@ pipeline {
 
                     sh "docker build -t ${imageName} ."
 
+withCredentials([usernamePassword(credentialsId: 'aws-cred', usernameVariable: 'AWS_ACCESS_KEY', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                      sh "docker tag ${imageName} ${awsAccountId}.dkr.ecr.${region}.amazonaws.com/${repository}:${env.BUILD_NUMBER}"
 
 sh "aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${awsAccountId}.dkr.ecr.${region}.amazonaws.com"
 
 sh "docker push ${awsAccountId}.dkr.ecr.${region}.amazonaws.com/${repository}:${env.BUILD_NUMBER}"
-
+}
         }
 
 }
