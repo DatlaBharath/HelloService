@@ -58,7 +58,7 @@ spec:
     spec:
       containers:
       - name: helloservice
-        image: 1234567890.dkr.ecr.ap-south-1.amazonaws.com/helloservice:${env.BUILD_NUMBER}
+        image: 522814716906.dkr.ecr.ap-south-1.amazonaws.com/helloservice:${env.BUILD_NUMBER}
         ports:
         - containerPort: 5000
 """
