@@ -1,5 +1,6 @@
 pipeline {
     agent any
+
     tools {
         maven 'Maven'
     }
@@ -17,23 +18,20 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build and Push Docker Image') {
             steps {
                 script {
+                    def awsAccountId = '522814716906'
+                    def region = 'ap-south-1'
+                    def repository = 'helloservice'
                     def imageName = "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
-                    sh "docker build -t ${imageName} ."
-                }
-            }
-        }
 
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
-                        def imageName = "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
-                        sh "docker push ${imageName}"
-                    }
+                    sh "docker build -t ${imageName} ."
+                    sh """
+                        aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${awsAccountId}.dkr.ecr.${region}.amazonaws.com
+                        docker tag ${imageName} ${awsAccountId}.dkr.ecr.${region}.amazonaws.com/${repository}:${env.BUILD_NUMBER}
+                        docker push ${awsAccountId}.dkr.ecr.${region}.amazonaws.com/${repository}:${env.BUILD_NUMBER}
+                    """
                 }
             }
         }
@@ -60,11 +58,10 @@ spec:
     spec:
       containers:
       - name: helloservice
-        image: sakthisiddu1/helloservice:${env.BUILD_NUMBER}
+        image: 1234567890.dkr.ecr.ap-south-1.amazonaws.com/helloservice:${env.BUILD_NUMBER}
         ports:
         - containerPort: 5000
 """
-
                     def serviceYaml = """
 apiVersion: v1
 kind: Service
@@ -80,12 +77,10 @@ spec:
     nodePort: 30007
   type: NodePort
 """
-
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
-
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.6.94.49 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.6.94.49 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.134.27 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.233.134.27 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
