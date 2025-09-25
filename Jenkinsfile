@@ -39,6 +39,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
+                    def awsAccountId = '522814716906'
+                    def region = 'ap-south-1'
+                    def repository = 'helloservice'
                     def deploymentYaml = """
 apiVersion: apps/v1
 kind: Deployment
@@ -58,7 +61,7 @@ spec:
     spec:
       containers:
       - name: helloservice
-        image: 522814716906.dkr.ecr.ap-south-1.amazonaws.com/helloservice:${env.BUILD_NUMBER}
+        image: ${awsAccountId}.dkr.${region}.amazonaws.com/${repository}:${env.BUILD_NUMBER}
         ports:
         - containerPort: 5000
 """
