@@ -32,7 +32,7 @@ jobs:
     steps:
       - name: Build Docker image
         run: |
-          docker build -t sakthisiddu1/helloservice:${{ github.run_number }} .
+          docker build -t undefined/helloservice:${{ github.run_number }} .
 
   push_image:
     runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
@@ -46,7 +46,7 @@ jobs:
 
       - name: Push Docker image to Docker Hub
         run: |
-          docker push sakthisiddu1/helloservice:${{ github.run_number }}
+          docker push undefined/helloservice:${{ github.run_number }}
 
   deploy:
     runs-on: adminEC23C9F6-77AD-9E64-7C02-A41EF19C7CC3-runner
@@ -71,7 +71,7 @@ jobs:
               spec:
                 containers:
                 - name: helloservice
-                  image: sakthisiddu1/helloservice:${{ github.run_number }}
+                  image: undefined/helloservice:${{ github.run_number }}
                   ports:
                   - containerPort: 5000
           " > deployment.yaml
@@ -91,5 +91,5 @@ jobs:
               nodePort: 30007
           " > service.yaml
 
-          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@3.109.121.145 "kubectl apply -f -" < deployment.yaml
-          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@3.109.121.145 "kubectl apply -f -" < service.yaml
+          ssh -o StrictHostKeyChecking=no -i /home/ubuntu/.ssh/test.pem ubuntu@65.0.96.191 "kubectl apply -f -" < deployment.yaml
+          ssh -i /home/ubuntu/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@65.0.96.191 "kubectl apply -f -" < service.yaml
