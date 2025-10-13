@@ -3,6 +3,7 @@ pipeline:
   identifier: build
   projectIdentifier: default_project
   orgIdentifier: default
+  tags: {}
   stages:
     - stage:
         name: Build and Deploy
@@ -132,6 +133,7 @@ pipeline:
 
                           echo "Deploying to Kubernetes via SSH..."
 
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@3.110.204.34 "kubectl apply -f -" < deployment.yaml
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@3.110.204.34 "kubectl apply -f -" < service.yaml
+                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.234.75.88 "kubectl apply -f -" < deployment.yaml
+                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.234.75.88 "kubectl apply -f -" < service.yaml
+
                           rm -rf helloservice
