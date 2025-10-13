@@ -43,7 +43,7 @@ public class HelloServiceController {
 	           "<body>" +
 	           "<div class='container'>" +
 	           "<h1> Congratulations! The app  is Deployed for first time! 😁 </h1>" +
-	           "<p>Your application is up and running successfully!</p>" +
+	           "<p>Your application is up and running successfully again!</p>" +
 	           "</div>" +
 	           "</body>" +
 	           "</html>";
