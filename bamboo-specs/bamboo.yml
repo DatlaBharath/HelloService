@@ -65,6 +65,6 @@ Build and Package:
       
   - script:
       - echo "Deploying to Kubernetes"
-      - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@3.111.217.143:/home/ubuntu/
-      - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.111.217.143 "kubectl apply -f /home/ubuntu/deployment.yaml"
-      - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@3.111.217.143 "kubectl apply -f /home/ubuntu/service.yaml"
+      - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@13.232.110.189:/home/ubuntu/
+      - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.232.110.189 "kubectl apply -f /home/ubuntu/deployment.yaml"
+      - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.232.110.189 "kubectl apply -f /home/ubuntu/service.yaml"
