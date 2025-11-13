@@ -9,9 +9,9 @@ triggers:
       period: '10'
 
 stages:
-    - Build and Deploy:
-        jobs:
-        - Build and Package
+  - Build and Deploy:
+      jobs:
+      - Build and Package
 
 Build and Package:
     tasks:
