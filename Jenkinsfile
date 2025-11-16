@@ -84,8 +84,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.234.239.251 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.234.239.251 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.198.113 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.198.113 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
