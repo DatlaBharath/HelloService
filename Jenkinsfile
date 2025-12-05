@@ -3,7 +3,7 @@ pipeline {
     tools {
         maven 'Maven'
     }
-
+    
     stages {
         stage('Checkout') {
             steps {
@@ -64,7 +64,7 @@ spec:
         ports:
         - containerPort: 5000
 """
-
+                    
                     def serviceYaml = """
 apiVersion: v1
 kind: Service
@@ -80,17 +80,17 @@ spec:
     nodePort: 30007
   type: NodePort
 """
-
+                    
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
-
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@35.154.204.53 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@35.154.204.53 "kubectl apply -f -" < service.yaml'
+                    
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.209.183 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.209.183 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
     }
-
+    
     post {
         success {
             echo 'Deployment was successful'
