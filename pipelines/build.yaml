@@ -96,6 +96,6 @@ pipeline:
                           cd helloservice
                           echo "Deploying to Kubernetes via SSH..."
 
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.235.115.15 "helm install my-hello ./helm/helloservice"
+                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.235.115.15 "git clone https://github.com/DatlaBharath/helloservice.git && cd helloservice && helm install my-hello ./helm/helloservice"
 
                           rm -rf helloservice
