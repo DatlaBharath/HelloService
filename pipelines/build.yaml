@@ -92,9 +92,10 @@ pipeline:
                       type: Inline
                       spec:
                         script: |
+                        git clone https://github.com/DatlaBharath/helloservice.git
                         cd helloservice
-                          echo "Deploying to Kubernetes via SSH..."
+                        echo "Deploying to Kubernetes via SSH..."
 
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@15.206.81.165 "helm install my-hello ./helm/helloservice"
+                        ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@15.206.81.165 "helm install my-hello ./helm/helloservice"
 
-                          rm -rf helloservice
+                        rm -rf helloservice
