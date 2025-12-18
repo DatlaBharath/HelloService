@@ -10,7 +10,7 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/DatlaBharath/HelloService'
             }
         }
-        
+
         stage('Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
