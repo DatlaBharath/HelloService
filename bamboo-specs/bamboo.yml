@@ -1,3 +1,4 @@
+yaml
 ---
 version: 2
 plan:
@@ -9,9 +10,9 @@ triggers:
       period: '10'
 
 stages:
-    - Build and Deploy:
-        jobs:
-        - Build and Package
+  - Build and Deploy:
+      jobs:
+      - Build and Package
 
 Build and Package:
     tasks:
@@ -20,7 +21,7 @@ Build and Package:
         - docker build -t ${bamboo.dockerUser}/helloservice:${bamboo.buildNumber} .
         - echo ${bamboo.dockerPass} | docker login -u ${bamboo.dockerUser} --password-stdin
         - docker push ${bamboo.dockerUser}/helloservice:${bamboo.buildNumber}
-        
+
     - script:
         - echo "Creating deployment.yaml"
         - |
@@ -33,11 +34,11 @@ Build and Package:
                 replicas: 2
                 selector:
                     matchLabels:
-                      app: helloservice
+                        app: helloservice
                 template:
                     metadata:
-                      labels:
-                        app: helloservice
+                        labels:
+                            app: helloservice
                     spec:
                         containers:
                         - name: helloservice
@@ -45,7 +46,7 @@ Build and Package:
                           ports:
                           - containerPort: 5000
             EOF
-        
+
         - echo "Creating service.yaml"
         - |
             cat <<EOF > service.yaml
@@ -56,15 +57,15 @@ Build and Package:
             spec:
                 type: NodePort
                 selector:
-                  app: helloservice
+                    app: helloservice
                 ports:
                 - port: 5000
                   targetPort: 5000
                   nodePort: 30007
             EOF
-        
+
     - script:
         - echo "Deploying to Kubernetes"
-        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@13.201.12.77:/home/ubuntu/
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.201.12.77 "kubectl apply -f /home/ubuntu/deployment.yaml"
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.201.12.77 "kubectl apply -f /home/ubuntu/service.yaml"
+        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@13.233.173.101:/home/ubuntu/
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.233.173.101 "kubectl apply -f /home/ubuntu/deployment.yaml"
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.233.173.101 "kubectl apply -f /home/ubuntu/service.yaml"
