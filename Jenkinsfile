@@ -1,3 +1,4 @@
+jenkins
 pipeline {
     agent any
     tools {
@@ -31,7 +32,7 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                         sh 'echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin'
-                        def imageName = "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
+                         def imageName = "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
                         sh "docker push ${imageName}"
                     }
                 }
@@ -84,8 +85,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.2.149.63 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.2.149.63 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@52.66.121.187 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@52.66.121.187 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
