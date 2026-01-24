@@ -1,4 +1,3 @@
-jenkins
 pipeline {
     agent any
     tools {
