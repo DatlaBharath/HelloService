@@ -1,9 +1,10 @@
+jenkins
 pipeline {
     agent any
     tools {
         maven 'Maven'
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
@@ -84,8 +85,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@35.154.62.146 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@35.154.62.146 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.1.136.2 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.1.136.2 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
