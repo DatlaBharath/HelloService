@@ -3,7 +3,6 @@ pipeline {
     tools {
         maven 'Maven'
     }
-
     stages {
         stage('Checkout') {
             steps {
@@ -84,8 +83,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.0.132.216 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.0.132.216 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.0.18.211 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.0.18.211 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
