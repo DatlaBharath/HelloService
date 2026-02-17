@@ -2,11 +2,8 @@
 version: 2
 plan:
     project-key: AUT
-    name: HelloService Build and Deploy Plan
+    name: Maven Build, Docker Push and Kubernetes Deploy
     key: MVN
-triggers:
-  - polling:
-      period: '10'
 
 stages:
     - Build and Deploy:
@@ -20,7 +17,7 @@ Build and Package:
         - docker build -t ${bamboo.dockerUser}/helloservice:${bamboo.buildNumber} .
         - echo ${bamboo.dockerPass} | docker login -u ${bamboo.dockerUser} --password-stdin
         - docker push ${bamboo.dockerUser}/helloservice:${bamboo.buildNumber}
-
+        
     - script:
         - echo "Creating deployment.yaml"
         - |
@@ -33,11 +30,11 @@ Build and Package:
                 replicas: 2
                 selector:
                     matchLabels:
-                      app: helloservice
+                        app: helloservice
                 template:
                     metadata:
-                      labels:
-                        app: helloservice
+                        labels:
+                            app: helloservice
                     spec:
                         containers:
                         - name: helloservice
@@ -62,9 +59,9 @@ Build and Package:
                   targetPort: 5000
                   nodePort: 30007
             EOF
-
+        
     - script:
         - echo "Deploying to Kubernetes"
-        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@13.203.226.56:/home/ubuntu/
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.203.226.56 "kubectl apply -f /home/ubuntu/deployment.yaml"
-        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.203.226.56 "kubectl apply -f /home/ubuntu/service.yaml"
+        - scp -o StrictHostKeyChecking=no -i /var/test.pem deployment.yaml service.yaml ubuntu@13.126.65.218:/home/ubuntu/
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.126.65.218 "kubectl apply -f /home/ubuntu/deployment.yaml"
+        - ssh -o StrictHostKeyChecking=no -i /var/test.pem ubuntu@13.126.65.218 "kubectl apply -f /home/ubuntu/service.yaml"
