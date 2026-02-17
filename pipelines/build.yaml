@@ -26,13 +26,13 @@ pipeline:
                           rm -rf helloservice
                           git clone https://github.com/DatlaBharath/helloservice.git
                           cd helloservice
+                          git checkout main
                           pwd
                           ls
-                  executionTarget: {}
-                  environmentVariables: []
-                  outputVariables: []
+                    executionTarget: {}
+                    environmentVariables: []
+                    outputVariables: []
                   timeout: 10m
-
               - step:
                   name: Build Project
                   identifier: Build_Project
@@ -46,7 +46,6 @@ pipeline:
                         script: |
                           cd helloservice
                           mvn clean install -DskipTests
-
               - step:
                   name: Build Docker Image
                   identifier: Build_Image
@@ -60,7 +59,6 @@ pipeline:
                         script: |
                           cd helloservice
                           docker build -t sakthisiddu1/helloservice:<+pipeline.sequenceId> .
-
               - step:
                   name: Push Docker Image
                   identifier: Push_Image
@@ -84,7 +82,6 @@ pipeline:
                           echo "$DOCKERHUB_PASSWORD"
                           echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
                           docker push $DOCKERHUB_USERNAME/helloservice:<+pipeline.sequenceId>
-
               - step:
                   name: Deploy to Kubernetes via SSH
                   identifier: Deploy_K8s
@@ -137,7 +134,7 @@ pipeline:
 
                           echo "Deploying to Kubernetes via SSH..."
 
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.235.247.200 "kubectl apply -f -" < deployment.yaml
-                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.235.247.200 "kubectl apply -f -" < service.yaml
+                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.116.47 "kubectl apply -f -" < deployment.yaml
+                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.116.47 "kubectl apply -f -" < service.yaml
 
                           rm -rf helloservice
