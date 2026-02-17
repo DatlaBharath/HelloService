@@ -134,7 +134,7 @@ pipeline:
 
                           echo "Deploying to Kubernetes via SSH..."
 
-                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.116.47 "kubectl apply -f -" < deployment.yaml
-                          ssh -i /home/harness/.ssh/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.116.47 "kubectl apply -f -" < service.yaml
+                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.233.128.196 "kubectl apply -f -" < deployment.yaml
+                          ssh -o StrictHostKeyChecking=no -i /home/harness/.ssh/test.pem ubuntu@13.233.128.196 "kubectl apply -f -" < service.yaml
 
                           rm -rf helloservice
