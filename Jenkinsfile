@@ -1,7 +1,7 @@
 pipeline {
     agent any
     tools {
-        maven 'Maven'
+        NodeJS 'NodeJS'
     }
 
     stages {
@@ -13,7 +13,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'npm install && npm run build -- --skipTests'
             }
         }
 
@@ -62,7 +62,7 @@ spec:
       - name: helloservice
         image: sakthisiddu1/helloservice:${env.BUILD_NUMBER}
         ports:
-        - containerPort: 5000
+        - containerPort: 80
 """
 
                     def serviceYaml = """
@@ -75,8 +75,8 @@ spec:
     app: helloservice
   ports:
   - protocol: TCP
-    port: 5000
-    targetPort: 5000
+    port: 80
+    targetPort: 80
     nodePort: 30007
   type: NodePort
 """
@@ -84,8 +84,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.2.189.147 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.2.189.147 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.238.19 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@43.205.238.19 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
