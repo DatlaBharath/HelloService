@@ -13,7 +13,8 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'npm install && npm run build -- --skipTests'
+                sh 'npm install'
+                sh 'npm run build --production'
             }
         }
 
