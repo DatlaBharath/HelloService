@@ -64,7 +64,6 @@ spec:
         ports:
         - containerPort: 5000
 """
-
                     def serviceYaml = """
 apiVersion: v1
 kind: Service
@@ -84,8 +83,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.0.180.86 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@65.0.180.86 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.210.240 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.203.210.240 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
