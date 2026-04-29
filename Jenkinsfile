@@ -13,7 +13,13 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package -DskipTests'
+               sh '''
+                     until mvn -version; do
+                     echo "Waiting for Maven..."
+                     sleep 5
+                     done
+                     mvn clean package -DskipTests
+                     '''
             }
         }
 
