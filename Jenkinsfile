@@ -1,5 +1,6 @@
 pipeline {
     agent any
+
     tools {
         maven 'Maven'
     }
@@ -60,7 +61,7 @@ spec:
     spec:
       containers:
       - name: helloservice
-        image: sakthisiddu1/helloservice:${env.BUILD_NUMBER}
+        image: "sakthisiddu1/helloservice:${env.BUILD_NUMBER}"
         ports:
         - containerPort: 5000
 """
@@ -84,8 +85,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.206.85.73 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.206.85.73 "kubectl apply -f -" < service.yaml'
+                    sh """ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.109.214.150 "kubectl apply -f -" < deployment.yaml"""
+                    sh """ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@3.109.214.150 "kubectl apply -f -" < service.yaml"""
                 }
             }
         }
