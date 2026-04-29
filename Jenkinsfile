@@ -13,13 +13,7 @@ pipeline {
 
         stage('Build') {
             steps {
-               sh '''
-                     until mvn -version; do
-                     echo "Waiting for Maven..."
-                     sleep 5
-                     done
-                     mvn clean package -DskipTests
-                     '''
+                sh 'mvn clean package -DskipTests'
             }
         }
 
@@ -90,8 +84,8 @@ spec:
                     sh """echo "$deploymentYaml" > deployment.yaml"""
                     sh """echo "$serviceYaml" > service.yaml"""
 
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.61.103 "kubectl apply -f -" < deployment.yaml'
-                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.201.61.103 "kubectl apply -f -" < service.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.206.94.73 "kubectl apply -f -" < deployment.yaml'
+                    sh 'ssh -i /var/test.pem -o StrictHostKeyChecking=no ubuntu@13.206.94.73 "kubectl apply -f -" < service.yaml'
                 }
             }
         }
