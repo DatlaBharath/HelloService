@@ -1,10 +1,9 @@
-# Apple
+# Grapes
 
-The apple is a sweet, edible fruit produced by an apple tree (*Malus domestica*). Apples are among the most widely cultivated tree fruits, grown in temperate climates worldwide.
+Grapes are small, round fruits that grow in clusters on woody vines of the genus *Vitis*. They come in many colors, including green, red, black, and purple.
 
 ## Key facts
-- **Family:** Rosaceae
-- **Color varieties:** Red, green, yellow
-- **Common uses:** Eaten fresh, baked into pies, pressed into juice or cider, dried as snacks
-- **Nutrition:** High in dietary fiber and vitamin C, low in calories
-- **Storage:** Keeps well refrigerated for weeks due to its firm skin
+- **Family:** Vitaceae
+- **Common uses:** Eaten fresh, dried into raisins, fermented into wine, pressed into juice
+- **Nutrition:** Contain antioxidants such as resveratrol, plus vitamins C and K
+- **Varieties:** Thousands of cultivars, including seedless types
